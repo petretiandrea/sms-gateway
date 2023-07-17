@@ -1,0 +1,127 @@
+openapi: 3.0.3
+info:
+  title: SMS Gateway - OpenAPI 3.0
+  description: |-
+    SMS Gateway APIs 
+  termsOfService: http://pagopa.it/terms/
+  contact:
+    email: apiteam@swagger.io
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+externalDocs:
+  description: Find out more about Swagger
+  url: http://swagger.io
+servers:
+  - url: https://localhost:8080
+paths:
+  /messages/:
+    post:
+      parameters: 
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema:
+            type: string
+      operationId: sendSms
+      requestBody:
+        description: "Send SMS Request"
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageRequest'
+        required: true
+      responses:
+        '201':
+          description: 'Succssful operation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  /messages/{id}:
+    get:
+      parameters: 
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      operationId: getSms
+      description: "Get sms send message request"
+      responses:
+        '200':
+          description: "Found send sms request"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+  
+  /messages/{id}/reports/:
+    post:
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: "Send report from mobile"
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageResponse"
+      responses:
+        '204':
+          description: "OK"
+          
+          
+components:
+  schemas:
+    MessageReport:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+           - "SENT"
+           - "FAIL"
+        description:
+          type: string
+        reportAt:
+          type: string
+          format: date-time
+    MessageResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        from:
+          type: string
+        to:
+          type: string
+        content:
+          type: string
+        sentAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum:
+            - PENDING
+            - SENT
+    
+    SendMessageRequest:
+      type: object
+      properties:
+        content:
+          type: string
+        from:
+          type: string
+        to:
+          type: string
+            
