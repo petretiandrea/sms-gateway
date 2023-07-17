@@ -1,4 +1,4 @@
-package user_account
+package account
 
 import (
 	"context"
@@ -38,12 +38,12 @@ func (i FirestoreUserAccountRepository) Save(account UserAccount) (bool, error) 
 	}
 }
 
-func (i FirestoreUserAccountRepository) FindById(accountId AccountId) *UserAccount {
+func (i FirestoreUserAccountRepository) FindById(accountId AccountID) *UserAccount {
 	if account, err := i.store.Collection(i.collection).Doc(string(accountId)).Get(i.context); err != nil {
 		var entity UserAccountJsonEntity
 		if err := account.DataTo(&entity); err == nil {
 			return &UserAccount{
-				Id:          AccountId(account.Ref.ID),
+				Id:          AccountID(account.Ref.ID),
 				ApiKey:      ApiKey(entity.ApiKey),
 				Phone:       entity.Phone,
 				IsSuspended: entity.IsSuspended,
@@ -67,7 +67,7 @@ func (i FirestoreUserAccountRepository) FindByApiKey(apiKey ApiKey) *UserAccount
 		return nil
 	}
 	return &UserAccount{
-		Id:          AccountId(accounts[0].Ref.ID),
+		Id:          AccountID(accounts[0].Ref.ID),
 		ApiKey:      ApiKey(entity.ApiKey),
 		Phone:       entity.Phone,
 		IsSuspended: entity.IsSuspended,

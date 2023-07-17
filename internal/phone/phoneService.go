@@ -1,9 +1,9 @@
-package device_gateway
+package phone
 
 import (
 	"errors"
+	"sms-gateway/internal/account"
 	"sms-gateway/internal/sms"
-	"sms-gateway/internal/user_account"
 )
 
 type Service struct {
@@ -14,7 +14,7 @@ func NewPhoneService(repo PhoneRepository) Service {
 	return Service{repo: repo}
 }
 
-func (service *Service) RegisterPhone(phoneNumber sms.PhoneNumber, userId user_account.AccountId) (*Phone, error) {
+func (service *Service) RegisterPhone(phoneNumber sms.PhoneNumber, userId account.AccountID) (*Phone, error) {
 	if existingPhone := service.repo.FindByPhoneNumber(phoneNumber); existingPhone != nil {
 		return existingPhone, nil
 	} else {

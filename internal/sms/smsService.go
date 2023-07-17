@@ -1,28 +1,28 @@
 package sms
 
 import (
-	"sms-gateway/internal/user_account"
+	"sms-gateway/internal/account"
 )
 
 type Service struct {
-	account user_account.UserAccountRepository
-	repo    MessageRepository
+	account account.UserAccountRepository
+	repo    Repository
 }
 
 type SendSmsCommand struct {
 	Content        string
 	To             string
 	From           string
-	Account        user_account.UserAccount
+	Account        account.UserAccount
 	IdempotencyKey string
 }
 
-func NewSmsService(repo MessageRepository) Service {
+func NewSmsService(repo Repository) Service {
 	return Service{repo: repo}
 }
 
 /*
-TODO: TODO: 1. retrieve user phone settings, for specific api key
+TODO: TODO: 1. retrieve user phone settings, for specific adapter key
 and FROM (the setting could be FCM Token associated to a device which
 owns the From phone number.
 */

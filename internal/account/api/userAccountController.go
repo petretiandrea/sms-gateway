@@ -2,7 +2,7 @@ package api
 
 import (
 	"net/http"
-	"sms-gateway/internal/user_account"
+	"sms-gateway/internal/account"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -21,7 +21,7 @@ type UserAccountResponse struct {
 }
 
 type UserAccountController struct {
-	CreateUserAccountUseCase user_account.UserAccountService
+	CreateUserAccountUseCase account.UserAccountService
 }
 
 func (controller *UserAccountController) RegisterRoutes(gin *gin.Engine) {
@@ -33,7 +33,7 @@ func (controller *UserAccountController) RegisterRoutes(gin *gin.Engine) {
 func (controller *UserAccountController) CreateUserAccount(context *gin.Context) {
 	var createRequest CreateAccountRequest
 	if err := context.BindJSON(&createRequest); err == nil {
-		accountRequest := user_account.CreateNewAccountParams{Phone: createRequest.PhoneNumber}
+		accountRequest := account.CreateNewAccountParams{Phone: createRequest.PhoneNumber}
 		if account, err := controller.CreateUserAccountUseCase.CreateNewAccount(accountRequest); err == nil {
 			context.JSONP(http.StatusCreated, UserAccountResponse{
 				AccountId:   string(account.Id),
@@ -51,7 +51,7 @@ func (controller *UserAccountController) CreateUserAccount(context *gin.Context)
 
 func (controller *UserAccountController) GetUserAccount(context *gin.Context) {
 	accountId := context.Param("accountId")
-	if account := controller.CreateUserAccountUseCase.GetUserAccount(user_account.AccountId(accountId)); account != nil {
+	if account := controller.CreateUserAccountUseCase.GetUserAccount(account.AccountID(accountId)); account != nil {
 		context.JSONP(http.StatusOK, UserAccountResponse{
 			AccountId:   string(account.Id),
 			PhoneNumber: account.Phone,

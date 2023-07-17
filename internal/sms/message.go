@@ -1,7 +1,7 @@
 package sms
 
 import (
-	"sms-gateway/internal/user_account"
+	"sms-gateway/internal/account"
 	"time"
 
 	"github.com/google/uuid"
@@ -14,20 +14,20 @@ type Message struct {
 	From           PhoneNumber
 	To             string
 	Content        string
-	UserId         user_account.AccountId
+	UserId         account.AccountID
 	IsSent         bool
 	SendAttempts   int
 	CreatedAt      time.Time
 	idempotencyKey string
 }
 
-type MessageRepository interface {
+type Repository interface {
 	Save(message Message) (*Message, error)
 	FindById(id MessageId) *Message
 	FindExisting(idempotencyKey string) *Message
 }
 
-func CreateNewSMS(userId user_account.AccountId, from PhoneNumber, to PhoneNumber, content string, idempotencyKey string) Message {
+func CreateNewSMS(userId account.AccountID, from PhoneNumber, to PhoneNumber, content string, idempotencyKey string) Message {
 	return Message{
 		Id:             MessageId(uuid.NewString()),
 		UserId:         userId,

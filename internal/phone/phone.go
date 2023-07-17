@@ -1,8 +1,8 @@
-package device_gateway
+package phone
 
 import (
+	"sms-gateway/internal/account"
 	"sms-gateway/internal/sms"
-	"sms-gateway/internal/user_account"
 	"time"
 
 	"github.com/google/uuid"
@@ -14,7 +14,7 @@ type FCMToken string
 type Phone struct {
 	Id        PhoneId
 	Phone     sms.PhoneNumber
-	UserId    user_account.AccountId
+	UserId    account.AccountID
 	Token     FCMToken
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -27,7 +27,7 @@ type PhoneRepository interface {
 	Delete(id PhoneId) bool
 }
 
-func NewPhone(phone sms.PhoneNumber, accountId user_account.AccountId, token FCMToken) Phone {
+func NewPhone(phone sms.PhoneNumber, accountId account.AccountID, token FCMToken) Phone {
 	return Phone{
 		Id:        PhoneId(uuid.NewString()),
 		Phone:     phone,

@@ -1,9 +1,9 @@
-package device_gateway
+package phone
 
 import (
 	"context"
+	"sms-gateway/internal/account"
 	"sms-gateway/internal/sms"
-	"sms-gateway/internal/user_account"
 	"time"
 
 	"cloud.google.com/go/firestore"
@@ -91,7 +91,7 @@ func (entity *PhoneJsonEntity) toMessage(id string) *Phone {
 	return &Phone{
 		Id:        PhoneId(id),
 		Phone:     sms.PhoneNumber{Number: entity.Phone},
-		UserId:    user_account.AccountId(entity.Account),
+		UserId:    account.AccountID(entity.Account),
 		Token:     FCMToken(entity.FCMToken),
 		CreatedAt: entity.CreatedAt,
 		UpdatedAt: entity.UpdatedAt,

@@ -18,6 +18,8 @@ servers:
 paths:
   /messages/:
     post:
+      tags:
+        - "sms"
       parameters:
         - in: header
           name: Idempotency-Key
@@ -41,6 +43,8 @@ paths:
                 $ref: '#/components/schemas/MessageResponse'
   /messages/{id}:
     get:
+      tags:
+        - "sms"
       parameters:
         - in: path
           name: id
@@ -56,9 +60,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
-
   /messages/{id}/reports/:
     post:
+      tags:
+        - "sms"
       parameters:
         - in: path
           name: id
@@ -74,6 +79,47 @@ paths:
       responses:
         '204':
           description: "OK"
+
+  /account:
+    post:
+      tags:
+        - "user account"
+      operationId: createAccount
+      parameters:
+        - in: header
+          name: Api-Key
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: "Account created"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accountId:
+                    type: string
+                  phoneNumber:
+                    type: string
+                  apiKey:
+                    type: string
+                  isActive:
+                    type: boolean
+                  createAt:
+                    type: string
+                    format: datetime
+      requestBody:
+        description: "Account to create"
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phoneNumber:
+                  type: string
+                  example: "123546"
 
 
 components:

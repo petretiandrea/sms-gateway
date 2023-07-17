@@ -1,4 +1,4 @@
-package user_account
+package account
 
 type UserAccountService struct {
 	repo UserAccountRepository
@@ -21,7 +21,7 @@ func (service *UserAccountService) CreateNewAccount(params CreateNewAccountParam
 	}
 }
 
-func (service *UserAccountService) GetUserAccount(id AccountId) *UserAccount {
+func (service *UserAccountService) GetUserAccount(id AccountID) *UserAccount {
 	return service.repo.FindById(id)
 }
 
@@ -29,7 +29,7 @@ func (service *UserAccountService) GetUserAccountByApiKey(apiKey ApiKey) *UserAc
 	return service.repo.FindByApiKey(apiKey)
 }
 
-func (service *UserAccountService) GetUserAccountApiKey(id AccountId) *ApiKey {
+func (service *UserAccountService) GetUserAccountApiKey(id AccountID) *ApiKey {
 	if account := service.repo.FindById(id); account != nil {
 		return &account.ApiKey
 	} else {

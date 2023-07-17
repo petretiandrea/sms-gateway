@@ -2,18 +2,17 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"net/http"
-	"sms-gateway/internal/device_gateway"
-	phoneApi "sms-gateway/internal/device_gateway/api"
-	"sms-gateway/internal/sms"
-	"sms-gateway/internal/sms/api"
-	"sms-gateway/internal/user_account"
-	userApi "sms-gateway/internal/user_account/api"
-
 	firebase "firebase.google.com/go"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"google.golang.org/api/option"
+	"net/http"
+	"sms-gateway/internal/account"
+	userApi "sms-gateway/internal/account/api"
+	"sms-gateway/internal/phone"
+	phoneApi "sms-gateway/internal/phone/api"
+	"sms-gateway/internal/sms"
+	"sms-gateway/internal/sms/api"
 )
 
 func main() {
@@ -33,22 +32,22 @@ func main() {
 	}
 	defer firestoreClient.Close()
 	// user account example
-	accountRepository := user_account.NewFirestoreUserAccountRepository(firebaseContext, firestoreClient, "userAccounts")
+	accountRepository := account.NewFirestoreUserAccountRepository(firebaseContext, firestoreClient, "userAccounts")
 	smsRepository := sms.NewMessageFirestoreRepository(firebaseContext, firestoreClient, "sms")
-	phoneRepository := device_gateway.NewFirestorePhoneRepository(firebaseContext, firestoreClient, "phones")
+	phoneRepository := phone.NewFirestorePhoneRepository(firebaseContext, firestoreClient, "phones")
 
 	userAccountController := userApi.UserAccountController{
-		CreateUserAccountUseCase: user_account.NewUserAccountService(accountRepository),
+		CreateUserAccountUseCase: account.NewUserAccountService(accountRepository),
 	}
 
 	smsController := api.SmsApiController{
-		Account: user_account.NewUserAccountService(accountRepository),
+		Account: account.NewUserAccountService(accountRepository),
 		Sms:     sms.NewSmsService(&smsRepository),
 	}
 
 	phoneApiController := phoneApi.PhoneApiController{
-		Phone:   device_gateway.NewPhoneService(&phoneRepository),
-		Account: user_account.NewUserAccountService(accountRepository),
+		Phone:   phone.NewPhoneService(&phoneRepository),
+		Account: account.NewUserAccountService(accountRepository),
 	}
 
 	server := gin.Default()

@@ -1,10 +1,9 @@
 package sms
 
 import (
-	"context"
-	"sms-gateway/internal/user_account"
-
 	"cloud.google.com/go/firestore"
+	"context"
+	"sms-gateway/internal/account"
 )
 
 const idempotencyKeyName = "idempotencyKey"
@@ -89,7 +88,7 @@ func (entity *MessageJsonEntity) toMessage(id string) *Message {
 		To:             entity.To,
 		IsSent:         entity.IsSent,
 		Content:        entity.Content,
-		UserId:         user_account.AccountId(entity.Owner),
+		UserId:         account.AccountID(entity.Owner),
 		idempotencyKey: entity.IdempotencyKey,
 	}
 }
