@@ -2,10 +2,7 @@ package main
 
 import (
 	"context"
-	firebase "firebase.google.com/go"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"google.golang.org/api/option"
 	"net/http"
 	"sms-gateway/internal/device_gateway"
 	phoneApi "sms-gateway/internal/device_gateway/api"
@@ -13,6 +10,10 @@ import (
 	"sms-gateway/internal/sms/api"
 	"sms-gateway/internal/user_account"
 	userApi "sms-gateway/internal/user_account/api"
+
+	firebase "firebase.google.com/go"
+	"github.com/gin-gonic/gin"
+	"google.golang.org/api/option"
 )
 
 func main() {

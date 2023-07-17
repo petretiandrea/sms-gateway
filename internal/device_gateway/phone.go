@@ -1,10 +1,11 @@
 package device_gateway
 
 import (
-	"github.com/google/uuid"
 	"sms-gateway/internal/sms"
 	"sms-gateway/internal/user_account"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type PhoneId string

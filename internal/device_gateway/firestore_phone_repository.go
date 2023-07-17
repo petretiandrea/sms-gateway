@@ -1,11 +1,12 @@
 package device_gateway
 
 import (
-	"cloud.google.com/go/firestore"
 	"context"
 	"sms-gateway/internal/sms"
 	"sms-gateway/internal/user_account"
 	"time"
+
+	"cloud.google.com/go/firestore"
 )
 
 const phoneKey = "phone"

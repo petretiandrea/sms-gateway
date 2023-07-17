@@ -1,9 +1,10 @@
 package user_account
 
 import (
-	"cloud.google.com/go/firestore"
 	"context"
 	"time"
+
+	"cloud.google.com/go/firestore"
 )
 
 type FirestoreUserAccountRepository struct {

@@ -1,10 +1,11 @@
 package api
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"sms-gateway/internal/sms"
 	"sms-gateway/internal/user_account"
+
+	"github.com/gin-gonic/gin"
 )
 
 type SmsApiController struct {

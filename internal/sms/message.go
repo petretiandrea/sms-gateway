@@ -1,9 +1,10 @@
 package sms
 
 import (
-	"github.com/google/uuid"
 	"sms-gateway/internal/user_account"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type MessageId string

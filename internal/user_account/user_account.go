@@ -2,9 +2,10 @@ package user_account
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type AccountId string

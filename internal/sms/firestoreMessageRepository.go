@@ -1,9 +1,10 @@
 package sms
 
 import (
-	"cloud.google.com/go/firestore"
 	"context"
 	"sms-gateway/internal/user_account"
+
+	"cloud.google.com/go/firestore"
 )
 
 const idempotencyKeyName = "idempotencyKey"
