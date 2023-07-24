@@ -1,0 +1,55 @@
+package application
+
+import (
+	"sms-gateway/internal/domain"
+	"sms-gateway/internal/infra"
+)
+
+type SmsService struct {
+	phone        PhoneService
+	repo         domain.Repository
+	notification infra.FirebasePushNotification
+}
+
+type SendSmsCommand struct {
+	Content        string
+	To             string
+	From           string
+	Account        domain.UserAccount
+	IdempotencyKey string
+}
+
+func NewSmsService(repo domain.Repository, phoneService PhoneService, pushService infra.FirebasePushNotification) SmsService {
+	return SmsService{repo: repo, phone: phoneService, notification: pushService}
+}
+
+func (service *SmsService) SendSMS(params SendSmsCommand) (*domain.Sms, error) {
+	if message := service.repo.FindExisting(params.IdempotencyKey); message != nil {
+		return message, nil
+	} else {
+		// retrieve phoneAccount associated
+		message := domain.CreateNewSMS(
+			params.Account.Id,
+			domain.PhoneNumber{Number: params.To},
+			domain.PhoneNumber{Number: params.From},
+			params.Content,
+			params.IdempotencyKey,
+		)
+		_, err := service.repo.Save(message)
+		if err != nil {
+			return nil, err
+		}
+		phoneAccount, err := service.phone.GetPhoneByNumber(message.From)
+		if err != nil {
+			return nil, err
+		}
+		if err := service.notification.Send(message, string(phoneAccount.Token)); err != nil {
+			return nil, err
+		}
+		return &message, nil
+	}
+}
+
+func (service *SmsService) GetSMS(id domain.SmsId) *domain.Sms {
+	return service.repo.FindById(id)
+}

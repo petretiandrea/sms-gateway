@@ -2,7 +2,8 @@ package api
 
 import (
 	"net/http"
-	"sms-gateway/internal/user_account"
+	"sms-gateway/internal/application"
+	"sms-gateway/internal/domain"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -21,24 +22,24 @@ type UserAccountResponse struct {
 }
 
 type UserAccountController struct {
-	CreateUserAccountUseCase user_account.UserAccountService
+	CreateUserAccountUseCase application.UserAccountService
 }
 
 func (controller *UserAccountController) RegisterRoutes(gin *gin.Engine) {
 	router := gin.Group("/account")
-	router.POST("/", controller.CreateUserAccount)
-	router.GET("/:accountId", controller.GetUserAccount)
+	router.POST("/", controller.createUserAccount)
+	router.GET("/:accountId", controller.getUserAccount)
 }
 
-func (controller *UserAccountController) CreateUserAccount(context *gin.Context) {
+func (controller *UserAccountController) createUserAccount(context *gin.Context) {
 	var createRequest CreateAccountRequest
 	if err := context.BindJSON(&createRequest); err == nil {
-		accountRequest := user_account.CreateNewAccountParams{Phone: createRequest.PhoneNumber}
-		if account, err := controller.CreateUserAccountUseCase.CreateNewAccount(accountRequest); err == nil {
+		accountRequest := application.CreateNewAccountParams{Phone: createRequest.PhoneNumber}
+		if newAccount, err := controller.CreateUserAccountUseCase.CreateNewAccount(accountRequest); err == nil {
 			context.JSONP(http.StatusCreated, UserAccountResponse{
-				AccountId:   string(account.Id),
-				PhoneNumber: account.Phone,
-				ApiKey:      string(account.ApiKey),
+				AccountId:   string(newAccount.Id),
+				PhoneNumber: newAccount.Phone,
+				ApiKey:      string(newAccount.ApiKey),
 			})
 		} else {
 			context.JSON(http.StatusBadRequest, err)
@@ -49,14 +50,14 @@ func (controller *UserAccountController) CreateUserAccount(context *gin.Context)
 	return
 }
 
-func (controller *UserAccountController) GetUserAccount(context *gin.Context) {
+func (controller *UserAccountController) getUserAccount(context *gin.Context) {
 	accountId := context.Param("accountId")
-	if account := controller.CreateUserAccountUseCase.GetUserAccount(user_account.AccountId(accountId)); account != nil {
+	if foundAccount := controller.CreateUserAccountUseCase.GetUserAccount(domain.AccountID(accountId)); foundAccount != nil {
 		context.JSONP(http.StatusOK, UserAccountResponse{
-			AccountId:   string(account.Id),
-			PhoneNumber: account.Phone,
-			IsActive:    !account.IsSuspended,
-			CreateAt:    account.CreatedAt,
+			AccountId:   string(foundAccount.Id),
+			PhoneNumber: foundAccount.Phone,
+			IsActive:    !foundAccount.IsSuspended,
+			CreateAt:    foundAccount.CreatedAt,
 		})
 	} else {
 		context.AbortWithStatus(http.StatusNotFound)

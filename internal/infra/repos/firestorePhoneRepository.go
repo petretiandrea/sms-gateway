@@ -1,9 +1,8 @@
-package device_gateway
+package repos
 
 import (
 	"context"
-	"sms-gateway/internal/sms"
-	"sms-gateway/internal/user_account"
+	"sms-gateway/internal/domain"
 	"time"
 
 	"cloud.google.com/go/firestore"
@@ -29,15 +28,15 @@ func NewFirestorePhoneRepository(ctx context.Context, store *firestore.Client, c
 	return FirestorePhoneRepository{context: ctx, store: store, collection: collection}
 }
 
-func (repo *FirestorePhoneRepository) Save(phone Phone) (*Phone, error) {
-	entity := phone.toEntity()
+func (repo *FirestorePhoneRepository) Save(phone domain.Phone) (*domain.Phone, error) {
+	entity := phoneToEntity(phone)
 	if _, err := repo.store.Collection(repo.collection).Doc(string(phone.Id)).Set(repo.context, entity); err != nil {
 		return nil, err
 	}
 	return &phone, nil
 }
 
-func (repo *FirestorePhoneRepository) FindById(id PhoneId) *Phone {
+func (repo *FirestorePhoneRepository) FindById(id domain.PhoneId) *domain.Phone {
 	if snapshot, err := repo.store.Collection(repo.collection).Doc(string(id)).Get(repo.context); err != nil {
 		return nil
 	} else {
@@ -50,7 +49,7 @@ func (repo *FirestorePhoneRepository) FindById(id PhoneId) *Phone {
 	}
 }
 
-func (repo *FirestorePhoneRepository) FindByPhoneNumber(number sms.PhoneNumber) *Phone {
+func (repo *FirestorePhoneRepository) FindByPhoneNumber(number domain.PhoneNumber) *domain.Phone {
 	snapshot, err := repo.store.
 		Collection(repo.collection).
 		Where(phoneKey, "==", number.Number).
@@ -70,14 +69,14 @@ func (repo *FirestorePhoneRepository) FindByPhoneNumber(number sms.PhoneNumber) 
 	return message.toMessage(snapshot[0].Ref.ID)
 }
 
-func (repo *FirestorePhoneRepository) Delete(id PhoneId) bool {
+func (repo *FirestorePhoneRepository) Delete(id domain.PhoneId) bool {
 	if _, err := repo.store.Doc(string(id)).Delete(repo.context); err != nil {
 		return false
 	}
 	return true
 }
 
-func (phone *Phone) toEntity() PhoneJsonEntity {
+func phoneToEntity(phone domain.Phone) PhoneJsonEntity {
 	return PhoneJsonEntity{
 		Phone:     phone.Phone.Number,
 		Account:   string(phone.UserId),
@@ -87,12 +86,12 @@ func (phone *Phone) toEntity() PhoneJsonEntity {
 	}
 }
 
-func (entity *PhoneJsonEntity) toMessage(id string) *Phone {
-	return &Phone{
-		Id:        PhoneId(id),
-		Phone:     sms.PhoneNumber{Number: entity.Phone},
-		UserId:    user_account.AccountId(entity.Account),
-		Token:     FCMToken(entity.FCMToken),
+func (entity *PhoneJsonEntity) toMessage(id string) *domain.Phone {
+	return &domain.Phone{
+		Id:        domain.PhoneId(id),
+		Phone:     domain.PhoneNumber{Number: entity.Phone},
+		UserId:    domain.AccountID(entity.Account),
+		Token:     domain.FCMToken(entity.FCMToken),
 		CreatedAt: entity.CreatedAt,
 		UpdatedAt: entity.UpdatedAt,
 	}

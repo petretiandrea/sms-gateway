@@ -1,8 +1,6 @@
-package device_gateway
+package domain
 
 import (
-	"sms-gateway/internal/sms"
-	"sms-gateway/internal/user_account"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,8 +11,8 @@ type FCMToken string
 
 type Phone struct {
 	Id        PhoneId
-	Phone     sms.PhoneNumber
-	UserId    user_account.AccountId
+	Phone     PhoneNumber
+	UserId    AccountID
 	Token     FCMToken
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -23,11 +21,11 @@ type Phone struct {
 type PhoneRepository interface {
 	Save(phone Phone) (*Phone, error)
 	FindById(id PhoneId) *Phone
-	FindByPhoneNumber(number sms.PhoneNumber) *Phone
+	FindByPhoneNumber(number PhoneNumber) *Phone
 	Delete(id PhoneId) bool
 }
 
-func NewPhone(phone sms.PhoneNumber, accountId user_account.AccountId, token FCMToken) Phone {
+func NewPhone(phone PhoneNumber, accountId AccountID, token FCMToken) Phone {
 	return Phone{
 		Id:        PhoneId(uuid.NewString()),
 		Phone:     phone,
@@ -38,7 +36,7 @@ func NewPhone(phone sms.PhoneNumber, accountId user_account.AccountId, token FCM
 	}
 }
 
-func (phone *Phone) updateFCMToken(newToken FCMToken) {
+func (phone *Phone) UpdateFCMToken(newToken FCMToken) {
 	phone.Token = newToken
 	phone.UpdatedAt = time.Now()
 }

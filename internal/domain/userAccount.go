@@ -1,4 +1,4 @@
-package user_account
+package domain
 
 import (
 	"fmt"
@@ -8,11 +8,11 @@ import (
 	"github.com/google/uuid"
 )
 
-type AccountId string
+type AccountID string
 type ApiKey string
 
 type UserAccount struct {
-	Id          AccountId
+	Id          AccountID
 	Phone       string
 	ApiKey      ApiKey
 	IsSuspended bool
@@ -21,14 +21,14 @@ type UserAccount struct {
 
 type UserAccountRepository interface {
 	Save(UserAccount) (bool, error)
-	FindById(AccountId) *UserAccount
+	FindById(AccountID) *UserAccount
 	FindByApiKey(ApiKey) *UserAccount
 }
 
 func NewUserAccount(phone string) UserAccount {
 	// TODO: validate Phone number
 	return UserAccount{
-		Id:          AccountId(uuid.NewString()),
+		Id:          AccountID(uuid.NewString()),
 		ApiKey:      ApiKey(strings.ReplaceAll(uuid.NewString(), "-", "")),
 		Phone:       phone,
 		IsSuspended: false,
@@ -38,7 +38,7 @@ func NewUserAccount(phone string) UserAccount {
 
 func (account UserAccount) String() string {
 	return fmt.Sprintf(
-		"Id %s, Phone %s, ApiKey %s, IsSuspende %t, CreatedAt %s",
+		"SmsId %s, Phone %s, ApiKey %s, IsSuspende %t, CreatedAt %s",
 		string(account.Id),
 		account.Phone,
 		string(account.ApiKey),
