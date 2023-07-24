@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"github.com/kelseyhightower/envconfig"
 	"gopkg.in/yaml.v3"
 	"os"
@@ -18,7 +19,7 @@ type AppConfig struct {
 func LoadConfig(configPath string) AppConfig {
 	f, err := os.Open(configPath)
 	if err != nil {
-		panic(err)
+		fmt.Println("No config file found")
 	}
 	defer f.Close()
 
