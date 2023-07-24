@@ -3,59 +3,72 @@ package main
 import (
 	"context"
 	firebase "firebase.google.com/go"
-	"fmt"
+	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"google.golang.org/api/option"
-	"net/http"
-	"sms-gateway/internal/account"
-	userApi "sms-gateway/internal/account/api"
-	"sms-gateway/internal/phone"
-	phoneApi "sms-gateway/internal/phone/api"
-	"sms-gateway/internal/sms"
-	"sms-gateway/internal/sms/api"
+	userApi "sms-gateway/internal/api"
+	"sms-gateway/internal/application"
+	"sms-gateway/internal/config"
+	"sms-gateway/internal/health"
+	"sms-gateway/internal/infra"
+	"sms-gateway/internal/infra/repos"
+	"time"
 )
 
 func main() {
+	appConfig := config.LoadConfig("app.yaml")
+	log, _ := zap.NewProduction()
+	server := gin.New()
+	server.Use(ginzap.Ginzap(log, time.RFC3339, true))
+	server.Use(ginzap.RecoveryWithZap(log, true))
 
-	// create async firebase context
-	firebaseContext := context.Background()
-	credentials := option.WithCredentialsFile("be-aesthetic-admin-sdk.json")
-	app, err := firebase.NewApp(firebaseContext, nil, credentials)
+	// create async firebase ctx
+	ctx := context.Background()
+	credentials := option.WithCredentialsFile(appConfig.FirebaseConfig.CredentialsFile)
+	app, err := firebase.NewApp(ctx, nil, credentials)
 	if err != nil {
-		fmt.Println("Failed to initialize firebase app")
+		log.Error("Failed to initialize firebase app")
 		return
 	}
-	firestoreClient, err := app.Firestore(firebaseContext)
+	firestoreClient, err := app.Firestore(ctx)
 	if err != nil {
-		fmt.Println("Failed to initialize firestore")
+		log.Error("Failed to initialize firestore")
 		return
 	}
 	defer firestoreClient.Close()
+	firebaseMessaging, err := app.Messaging(ctx)
+	if err != nil {
+		log.Error("Failed to initialize firestore")
+		return
+	}
+	pushService := infra.NewFirebasePushNotification(ctx, firebaseMessaging)
+	pushService.EnableDryRun()
+
 	// user account example
-	accountRepository := account.NewFirestoreUserAccountRepository(firebaseContext, firestoreClient, "userAccounts")
-	smsRepository := sms.NewMessageFirestoreRepository(firebaseContext, firestoreClient, "sms")
-	phoneRepository := phone.NewFirestorePhoneRepository(firebaseContext, firestoreClient, "phones")
+	accountRepository := repos.NewFirestoreUserAccountRepository(ctx, firestoreClient, appConfig.FirebaseConfig.UserAccount)
+	smsRepository := repos.NewMessageFirestoreRepository(ctx, firestoreClient, appConfig.FirebaseConfig.Sms)
+	phoneRepository := repos.NewFirestorePhoneRepository(ctx, firestoreClient, appConfig.FirebaseConfig.Phone)
 
 	userAccountController := userApi.UserAccountController{
-		CreateUserAccountUseCase: account.NewUserAccountService(accountRepository),
+		CreateUserAccountUseCase: application.NewUserAccountService(accountRepository),
 	}
 
-	smsController := api.SmsApiController{
-		Account: account.NewUserAccountService(accountRepository),
-		Sms:     sms.NewSmsService(&smsRepository),
+	smsController := userApi.SmsApiController{
+		Account: application.NewUserAccountService(accountRepository),
+		Sms:     application.NewSmsService(&smsRepository, application.NewPhoneService(&phoneRepository), pushService),
 	}
 
-	phoneApiController := phoneApi.PhoneApiController{
-		Phone:   phone.NewPhoneService(&phoneRepository),
-		Account: account.NewUserAccountService(accountRepository),
+	phoneApiController := userApi.PhoneApiController{
+		Phone:   application.NewPhoneService(&phoneRepository),
+		Account: application.NewUserAccountService(accountRepository),
 	}
 
-	server := gin.Default()
-	server.GET("/ping", func(context *gin.Context) {
-		context.JSON(http.StatusOK, gin.H{
-			"message": "pong",
-		})
-	})
+	listener := infra.NewFirestoreEventListener(ctx, firestoreClient, appConfig.FirebaseConfig.Sms)
+	go listener.ListenChanges()
+	defer listener.StopListenChanges()
+
+	health.RegisterGinHealthCheck(server, firestoreClient)
 	userAccountController.RegisterRoutes(server)
 	smsController.RegisterRoutes(server)
 	phoneApiController.RegisterRoutes(server)

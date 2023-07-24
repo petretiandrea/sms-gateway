@@ -1,9 +1,9 @@
-package sms
+package repos
 
 import (
 	"cloud.google.com/go/firestore"
 	"context"
-	"sms-gateway/internal/account"
+	"sms-gateway/internal/domain"
 )
 
 const idempotencyKeyName = "idempotencyKey"
@@ -28,15 +28,15 @@ func NewMessageFirestoreRepository(ctx context.Context, store *firestore.Client,
 	return FirestoreMessageRepository{context: ctx, store: store, collection: collection}
 }
 
-func (repo *FirestoreMessageRepository) Save(message Message) (*Message, error) {
-	entity := message.toEntity()
+func (repo *FirestoreMessageRepository) Save(message domain.Sms) (*domain.Sms, error) {
+	entity := smsMapToEntity(message)
 	if _, err := repo.store.Collection(repo.collection).Doc(string(message.Id)).Set(repo.context, entity); err != nil {
 		return nil, err
 	}
 	return &message, nil
 }
 
-func (repo *FirestoreMessageRepository) FindById(id MessageId) *Message {
+func (repo *FirestoreMessageRepository) FindById(id domain.SmsId) *domain.Sms {
 	if snapshot, err := repo.store.Collection(repo.collection).Doc(string(id)).Get(repo.context); err != nil {
 		return nil
 	} else {
@@ -49,7 +49,7 @@ func (repo *FirestoreMessageRepository) FindById(id MessageId) *Message {
 	}
 }
 
-func (repo *FirestoreMessageRepository) FindExisting(idempotencyKey string) *Message {
+func (repo *FirestoreMessageRepository) FindExisting(idempotencyKey string) *domain.Sms {
 	snapshot, err := repo.store.
 		Collection(repo.collection).
 		Where(idempotencyKeyName, "==", idempotencyKey).
@@ -69,7 +69,7 @@ func (repo *FirestoreMessageRepository) FindExisting(idempotencyKey string) *Mes
 	return message.toMessage(snapshot[0].Ref.ID)
 }
 
-func (message *Message) toEntity() MessageJsonEntity {
+func smsMapToEntity(message domain.Sms) MessageJsonEntity {
 	return MessageJsonEntity{
 		From:           message.From.Number,
 		To:             message.To,
@@ -77,18 +77,18 @@ func (message *Message) toEntity() MessageJsonEntity {
 		IsSent:         message.IsSent,
 		SendAttempts:   uint8(message.SendAttempts),
 		Owner:          string(message.UserId),
-		IdempotencyKey: message.idempotencyKey,
+		IdempotencyKey: message.IdempotencyKey,
 	}
 }
 
-func (entity *MessageJsonEntity) toMessage(id string) *Message {
-	return &Message{
-		Id:             MessageId(id),
-		From:           PhoneNumber{Number: entity.From},
+func (entity *MessageJsonEntity) toMessage(id string) *domain.Sms {
+	return &domain.Sms{
+		Id:             domain.SmsId(id),
+		From:           domain.PhoneNumber{Number: entity.From},
 		To:             entity.To,
 		IsSent:         entity.IsSent,
 		Content:        entity.Content,
-		UserId:         account.AccountID(entity.Owner),
-		idempotencyKey: entity.IdempotencyKey,
+		UserId:         domain.AccountID(entity.Owner),
+		IdempotencyKey: entity.IdempotencyKey,
 	}
 }

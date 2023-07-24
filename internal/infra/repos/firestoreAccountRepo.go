@@ -1,7 +1,8 @@
-package account
+package repos
 
 import (
 	"context"
+	"sms-gateway/internal/domain"
 	"time"
 
 	"cloud.google.com/go/firestore"
@@ -24,7 +25,7 @@ func NewFirestoreUserAccountRepository(ctx context.Context, store *firestore.Cli
 	return FirestoreUserAccountRepository{context: ctx, store: store, collection: collection}
 }
 
-func (i FirestoreUserAccountRepository) Save(account UserAccount) (bool, error) {
+func (i FirestoreUserAccountRepository) Save(account domain.UserAccount) (bool, error) {
 	accountEntity := UserAccountJsonEntity{
 		Phone:       account.Phone,
 		ApiKey:      string(account.ApiKey),
@@ -38,13 +39,13 @@ func (i FirestoreUserAccountRepository) Save(account UserAccount) (bool, error) 
 	}
 }
 
-func (i FirestoreUserAccountRepository) FindById(accountId AccountID) *UserAccount {
+func (i FirestoreUserAccountRepository) FindById(accountId domain.AccountID) *domain.UserAccount {
 	if account, err := i.store.Collection(i.collection).Doc(string(accountId)).Get(i.context); err != nil {
 		var entity UserAccountJsonEntity
 		if err := account.DataTo(&entity); err == nil {
-			return &UserAccount{
-				Id:          AccountID(account.Ref.ID),
-				ApiKey:      ApiKey(entity.ApiKey),
+			return &domain.UserAccount{
+				Id:          domain.AccountID(account.Ref.ID),
+				ApiKey:      domain.ApiKey(entity.ApiKey),
 				Phone:       entity.Phone,
 				IsSuspended: entity.IsSuspended,
 				CreatedAt:   entity.CreatedAt,
@@ -54,7 +55,7 @@ func (i FirestoreUserAccountRepository) FindById(accountId AccountID) *UserAccou
 	return nil
 }
 
-func (i FirestoreUserAccountRepository) FindByApiKey(apiKey ApiKey) *UserAccount {
+func (i FirestoreUserAccountRepository) FindByApiKey(apiKey domain.ApiKey) *domain.UserAccount {
 	accounts, err := i.store.Collection(i.collection).Where("apiKey", "==", apiKey).Limit(1).Documents(i.context).GetAll()
 	if err != nil {
 		return nil
@@ -66,9 +67,9 @@ func (i FirestoreUserAccountRepository) FindByApiKey(apiKey ApiKey) *UserAccount
 	if err := accounts[0].DataTo(&entity); err != nil {
 		return nil
 	}
-	return &UserAccount{
-		Id:          AccountID(accounts[0].Ref.ID),
-		ApiKey:      ApiKey(entity.ApiKey),
+	return &domain.UserAccount{
+		Id:          domain.AccountID(accounts[0].Ref.ID),
+		ApiKey:      domain.ApiKey(entity.ApiKey),
 		Phone:       entity.Phone,
 		IsSuspended: entity.IsSuspended,
 		CreatedAt:   entity.CreatedAt,

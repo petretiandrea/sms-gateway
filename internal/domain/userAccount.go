@@ -1,4 +1,4 @@
-package account
+package domain
 
 import (
 	"fmt"
@@ -38,7 +38,7 @@ func NewUserAccount(phone string) UserAccount {
 
 func (account UserAccount) String() string {
 	return fmt.Sprintf(
-		"Id %s, Phone %s, ApiKey %s, IsSuspende %t, CreatedAt %s",
+		"SmsId %s, Phone %s, ApiKey %s, IsSuspende %t, CreatedAt %s",
 		string(account.Id),
 		account.Phone,
 		string(account.ApiKey),
