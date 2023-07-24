@@ -1,0 +1,55 @@
+name: Deploy Helm on K8S
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      microservice-name:
+        required: true
+        type: string
+        description: "The name of microservice to deploy"
+      helm-path:
+        required: true
+        type: string
+        description: "Path where find helm chart files"
+      image-tag:
+        required: true
+        type: string
+        description: "Image Tag"
+
+jobs:
+  detect_environment:
+    runs-on: ubuntu-latest
+    name: Detect self hosted runner environment
+    outputs:
+      runner: ${{ steps.runner-label.outputs.runner }}
+
+    steps:
+      - name: Get Runner Label
+        id: runner-label
+        run: |
+          if [[ $GITHUB_REF == *tags* ]]; then
+            echo "runner=prod" >> $GITHUB_OUTPUT;
+          else
+            echo "runner=dev" >> $GITHUB_OUTPUT;
+          fi
+
+  deploy:
+    needs: [ detect_environment ]
+    runs-on: [self-hosted, "${{ needs.detect_environment.outputs.runner }}" ]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'latest'
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Helm upgrade
+        run: |
+          helm upgrade ${{ inputs.microservice-name }} \
+            --set image.tag=${{ inputs.image-tag }} \
+            ${{ inputs.helm-path }} --install --namespace default --wait --timeout 5m00s --debug
