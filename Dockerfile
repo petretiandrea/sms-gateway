@@ -6,5 +6,6 @@ RUN go build -o app-runnable ./cmd/main.go
 
 FROM alpine:3.18
 COPY --from=build /app/app-runnable ./app
+COPY --from=build /app/app.yaml ./app.yaml
 EXPOSE 8080
 ENTRYPOINT ["./app"]
