@@ -14,6 +14,7 @@ type AppConfig struct {
 		UserAccount     string `yaml:"collection_user_account"`
 		Phone           string `yaml:"collection_phone"`
 	} `yaml:"firebase"`
+	DryRun bool `yaml:"dry_run"`
 }
 
 func LoadConfig(configPath string) AppConfig {

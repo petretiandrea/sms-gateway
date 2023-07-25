@@ -43,7 +43,9 @@ func main() {
 		return
 	}
 	pushService := infra.NewFirebasePushNotification(ctx, firebaseMessaging)
-	pushService.EnableDryRun()
+	if appConfig.DryRun {
+		pushService.EnableDryRun()
+	}
 
 	// user account example
 	accountRepository := repos.NewFirestoreUserAccountRepository(ctx, firestoreClient, appConfig.FirebaseConfig.UserAccount)
