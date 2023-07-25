@@ -18,7 +18,7 @@ service:
     - 8080
 
 envConfig:
-  FIREBASECONFIG_CREDENTIALSFILE: /app/be-aesthetic-admin-sdk.json
+  FIREBASECONFIG_CREDENTIALSFILE: /be-aesthetic-admin-sdk.json
   FIREBASECONFIG_SMS: sms-dev
   FIREBASECONFIG_USERACCOUNT: user-account-dev
   FIREBASECONFIG_PHONE: phone-dev
@@ -26,7 +26,7 @@ envConfig:
 
 secretFiles:
   - name: "firebase-admin-config"
-    mountPath: "/app/be-aesthetic-admin-sdk.json"
+    mountPath: "/be-aesthetic-admin-sdk.json"
     subPath: "firebase-admin.json"
 
 readinessProbe:
