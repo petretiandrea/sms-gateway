@@ -23,9 +23,6 @@ envConfig:
   FIREBASECONFIG_USERACCOUNT: user-account-dev
   FIREBASECONFIG_PHONE: phone-dev
 
-secretsRefs:
-  - sms-gateway-service
-
 secretFiles:
   - name: "firebase-admin-config"
     mountPath: "/app/be-aesthetic-admin-sdk.json"
