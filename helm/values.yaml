@@ -22,7 +22,7 @@ envConfig:
   FIREBASECONFIG_SMS: sms-dev
   FIREBASECONFIG_USERACCOUNT: user-account-dev
   FIREBASECONFIG_PHONE: phone-dev
-  DRYRUN: true
+  DRYRUN: "true"
 
 secretFiles:
   - name: "firebase-admin-config"
