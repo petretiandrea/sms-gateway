@@ -13,6 +13,7 @@ import (
 	"sms-gateway/internal/health"
 	"sms-gateway/internal/infra"
 	"sms-gateway/internal/infra/repos"
+	"strconv"
 	"time"
 )
 
@@ -43,7 +44,7 @@ func main() {
 		return
 	}
 	pushService := infra.NewFirebasePushNotification(ctx, firebaseMessaging)
-	if appConfig.DryRun {
+	if active, _ := strconv.ParseBool(appConfig.DryRun); active {
 		pushService.EnableDryRun()
 	}
 
