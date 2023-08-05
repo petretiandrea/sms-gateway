@@ -17,6 +17,7 @@ type Sms struct {
 	IsSent         bool
 	SendAttempts   int
 	CreatedAt      time.Time
+	LastUpdateAt   time.Time
 	IdempotencyKey string
 }
 

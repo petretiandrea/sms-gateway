@@ -4,6 +4,7 @@ import (
 	"cloud.google.com/go/firestore"
 	"context"
 	"sms-gateway/internal/domain"
+	"time"
 )
 
 const idempotencyKeyName = "idempotencyKey"
@@ -15,13 +16,15 @@ type FirestoreMessageRepository struct {
 }
 
 type MessageJsonEntity struct {
-	From           string `firestore:"from"`
-	To             string `firestore:"to"`
-	Content        string `firestore:"content"`
-	IsSent         bool   `firestore:"isSent"`
-	SendAttempts   uint8  `firestore:"sendAttempts"`
-	Owner          string `firestore:"owner"`
-	IdempotencyKey string `firestore:"idempotencyKey"`
+	From           string    `firestore:"from"`
+	To             string    `firestore:"to"`
+	Content        string    `firestore:"content"`
+	IsSent         bool      `firestore:"isSent"`
+	SendAttempts   uint8     `firestore:"sendAttempts"`
+	Owner          string    `firestore:"owner"`
+	IdempotencyKey string    `firestore:"idempotencyKey"`
+	CreatedAt      time.Time `firestore:"createdAt"`
+	UpdatedAt      time.Time `firestore:"updatedAt"`
 }
 
 func NewMessageFirestoreRepository(ctx context.Context, store *firestore.Client, collection string) FirestoreMessageRepository {
@@ -30,6 +33,7 @@ func NewMessageFirestoreRepository(ctx context.Context, store *firestore.Client,
 
 func (repo *FirestoreMessageRepository) Save(message domain.Sms) (*domain.Sms, error) {
 	entity := smsMapToEntity(message)
+
 	if _, err := repo.store.Collection(repo.collection).Doc(string(message.Id)).Set(repo.context, entity); err != nil {
 		return nil, err
 	}
@@ -78,6 +82,8 @@ func smsMapToEntity(message domain.Sms) MessageJsonEntity {
 		SendAttempts:   uint8(message.SendAttempts),
 		Owner:          string(message.UserId),
 		IdempotencyKey: message.IdempotencyKey,
+		CreatedAt:      message.CreatedAt,
+		UpdatedAt:      time.Now(),
 	}
 }
 
@@ -90,5 +96,7 @@ func (entity *MessageJsonEntity) toMessage(id string) *domain.Sms {
 		Content:        entity.Content,
 		UserId:         domain.AccountID(entity.Owner),
 		IdempotencyKey: entity.IdempotencyKey,
+		CreatedAt:      entity.CreatedAt,
+		LastUpdateAt:   entity.UpdatedAt,
 	}
 }
