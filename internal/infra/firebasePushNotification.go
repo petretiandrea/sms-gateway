@@ -34,10 +34,10 @@ func (receiver *FirebasePushNotification) Send(message domain.Sms, token string)
 	}
 
 	if receiver.dryRun {
-		_, err := receiver.client.Send(receiver.ctx, firebaseMessage)
+		_, err := receiver.client.SendDryRun(receiver.ctx, firebaseMessage)
 		return err
 	} else {
-		_, err := receiver.client.SendDryRun(receiver.ctx, firebaseMessage)
+		_, err := receiver.client.Send(receiver.ctx, firebaseMessage)
 		return err
 	}
 }
