@@ -28,6 +28,9 @@ func (receiver *FirebasePushNotification) Send(message domain.Sms, token string)
 			"content": message.Content,
 			"to":      message.To,
 		},
+		Android: &messaging.AndroidConfig{
+			Priority: "high",
+		},
 	}
 
 	if receiver.dryRun {

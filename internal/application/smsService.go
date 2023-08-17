@@ -30,8 +30,8 @@ func (service *SmsService) SendSMS(params SendSmsCommand) (*domain.Sms, error) {
 		// retrieve phoneAccount associated
 		message := domain.CreateNewSMS(
 			params.Account.Id,
-			domain.PhoneNumber{Number: params.To},
 			domain.PhoneNumber{Number: params.From},
+			domain.PhoneNumber{Number: params.To},
 			params.Content,
 			params.IdempotencyKey,
 		)
