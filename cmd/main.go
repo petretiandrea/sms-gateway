@@ -21,7 +21,11 @@ func main() {
 	appConfig := config.LoadConfig("app.yaml")
 	log, _ := zap.NewProduction()
 	server := gin.New()
-	server.Use(ginzap.Ginzap(log, time.RFC3339, true))
+	server.Use(ginzap.GinzapWithConfig(log, &ginzap.Config{
+		TimeFormat: time.RFC3339,
+		UTC:        true,
+		SkipPaths:  []string{"/health"},
+	}))
 	server.Use(ginzap.RecoveryWithZap(log, true))
 
 	// create async firebase ctx
