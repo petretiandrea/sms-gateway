@@ -19,10 +19,10 @@ service:
 
 envConfig:
   FIREBASECONFIG_CREDENTIALSFILE: /be-aesthetic-admin-sdk.json
-  FIREBASECONFIG_SMS: sms-dev
-  FIREBASECONFIG_USERACCOUNT: user-account-dev
-  FIREBASECONFIG_PHONE: phone-dev
-  DRYRUN: "true"
+  FIREBASECONFIG_SMS: sms
+  FIREBASECONFIG_USERACCOUNT: user-account
+  FIREBASECONFIG_PHONE: phone
+  DRYRUN: "false"
 
 secretFiles:
   - name: "firebase-admin-config"
