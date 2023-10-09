@@ -52,4 +52,4 @@ jobs:
         run: |
           helm upgrade ${{ inputs.microservice-name }} \
             --set image.tag=${{ inputs.image-tag }} \
-            ${{ inputs.helm-path }} --install --namespace default --wait --timeout 5m00s --debug
+            ${{ inputs.helm-path }} --install --namespace beaesthetic --wait --timeout 5m00s --debug
