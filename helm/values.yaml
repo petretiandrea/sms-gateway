@@ -1,4 +1,4 @@
-namespace: "default"
+namespace: "beaesthetic"
 name: "sms-gateway-service"
 labels:
   app: "sms-gateway-api"
