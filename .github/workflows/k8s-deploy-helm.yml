@@ -31,8 +31,9 @@ jobs:
         run: |
           if [[ $GITHUB_REF == *tags* ]]; then
             echo "runner=prod" >> $GITHUB_OUTPUT;
+            echo "arch=arm64" >> $GITHUB_OUTPUT;
           else
-            echo "runner=prod" >> $GITHUB_OUTPUT;
+            echo "runner=dev" >> $GITHUB_OUTPUT;
             echo "arch=arm64" >> $GITHUB_OUTPUT;
           fi
 
