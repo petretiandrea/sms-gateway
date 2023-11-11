@@ -23,6 +23,7 @@ jobs:
     name: Detect self hosted runner environment
     outputs:
       runner: ${{ steps.runner-label.outputs.runner }}
+      arch: ${{ steps.runner-label.outputs.arch }}
 
     steps:
       - name: Get Runner Label
@@ -30,13 +31,15 @@ jobs:
         run: |
           if [[ $GITHUB_REF == *tags* ]]; then
             echo "runner=prod" >> $GITHUB_OUTPUT;
+            echo "arch=arm64" >> $GITHUB_OUTPUT;
           else
             echo "runner=dev" >> $GITHUB_OUTPUT;
+            echo "arch=arm64" >> $GITHUB_OUTPUT;
           fi
 
   deploy:
     needs: [ detect_environment ]
-    runs-on: [self-hosted, "${{ needs.detect_environment.outputs.runner }}" ]
+    runs-on: [self-hosted, "${{ needs.detect_environment.outputs.runner }}", "${{ needs.detect_environment.outputs.arch }}" ]
 
     steps:
       - name: Checkout
