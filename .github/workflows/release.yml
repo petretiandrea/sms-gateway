@@ -59,11 +59,11 @@ jobs:
         id: tag_deploy
         run: echo "tag=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}" >> $GITHUB_OUTPUT;
 
-#  deploy:
-#    needs: [build]
-#    name: "Deploy to K8s"
-#    uses: ./.github/workflows/k8s-deploy-helm.yml
-#    with:
-#      microservice-name: sms-gateway-service
-#      helm-path: "./helm/"
-#      image-tag: "${{ needs.build.outputs.tag_deploy }}"
+  deploy:
+    needs: [build]
+    name: "Deploy to K8s"
+    uses: ./.github/workflows/k8s-deploy-helm.yml
+    with:
+      microservice-name: sms-gateway-service
+      helm-path: "./helm/"
+      image-tag: "${{ needs.build.outputs.tag_deploy }}"
