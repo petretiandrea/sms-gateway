@@ -14,7 +14,9 @@ type AppConfig struct {
 		UserAccount     string `yaml:"collection_user_account"`
 		Phone           string `yaml:"collection_phone"`
 	} `yaml:"firebase"`
-	DryRun string `yaml:"dry_run"`
+	DryRun                string `yaml:"dry_run"`
+	MongoConnectionString string `yaml:"mongo_connection_string"`
+	MongoDatabaseName     string `yaml:"mongo_database_name"`
 }
 
 func LoadConfig(configPath string) AppConfig {

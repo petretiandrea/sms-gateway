@@ -3,13 +3,17 @@ package main
 import (
 	"context"
 	firebase "firebase.google.com/go"
+	"fmt"
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
 	"google.golang.org/api/option"
 	userApi "sms-gateway/internal/api"
 	"sms-gateway/internal/application"
 	"sms-gateway/internal/config"
+	"sms-gateway/internal/events"
 	"sms-gateway/internal/health"
 	"sms-gateway/internal/infra"
 	"sms-gateway/internal/infra/repos"
@@ -17,9 +21,13 @@ import (
 	"time"
 )
 
+const VERSION = "1.0.0"
+
 func main() {
-	appConfig := config.LoadConfig("app.yaml")
+	PrintInfo()
 	log, _ := zap.NewProduction()
+	zap.ReplaceGlobals(log)
+	appConfig := config.LoadConfig("app-dev.yaml")
 	server := gin.New()
 	server.Use(ginzap.GinzapWithConfig(log, &ginzap.Config{
 		TimeFormat: time.RFC3339,
@@ -52,35 +60,82 @@ func main() {
 		pushService.EnableDryRun()
 	}
 
+	// initialize mongo
+	mongoContext := context.Background()
+	mongoClient, err := ConnectMongoDb(appConfig.MongoConnectionString)
+	if err != nil {
+		log.Error("Failed to initialize mongodb")
+		return
+	}
+
 	// user account example
 	accountRepository := repos.NewFirestoreUserAccountRepository(ctx, firestoreClient, appConfig.FirebaseConfig.UserAccount)
 	smsRepository := repos.NewMessageFirestoreRepository(ctx, firestoreClient, appConfig.FirebaseConfig.Sms)
 	phoneRepository := repos.NewFirestorePhoneRepository(ctx, firestoreClient, appConfig.FirebaseConfig.Phone)
+	deliveryNotificationRepo := repos.NewMongoDeliveryNotificationRepository(mongoContext, mongoClient, appConfig.MongoDatabaseName)
+
+	webHookNotifier := userApi.HttpWebhookNotifier{}
+	deliveryNotificationService := application.NewDeliveryNotificationService(deliveryNotificationRepo, smsRepository, webHookNotifier)
+	userAccountService := application.NewUserAccountService(accountRepository)
 
 	userAccountController := userApi.UserAccountController{
 		CreateUserAccountUseCase: application.NewUserAccountService(accountRepository),
 	}
 
 	smsController := userApi.SmsApiController{
-		Account: application.NewUserAccountService(accountRepository),
+		Account: userAccountService,
 		Sms:     application.NewSmsService(&smsRepository, application.NewPhoneService(&phoneRepository), pushService),
 	}
 
 	phoneApiController := userApi.PhoneApiController{
 		Phone:   application.NewPhoneService(&phoneRepository),
-		Account: application.NewUserAccountService(accountRepository),
+		Account: userAccountService,
+	}
+
+	deliveryNotificationController := userApi.DeliveryNotificationController{
+		Account:              userAccountService,
+		DeliveryNotification: deliveryNotificationService,
 	}
 
 	listener := infra.NewFirestoreEventListener(ctx, firestoreClient, appConfig.FirebaseConfig.Sms)
-	go listener.ListenChanges()
-	defer listener.StopListenChanges()
+
+	deliveryConsumer := events.NewDeliveryNotificationConsumer(listener, deliveryNotificationService)
+	go deliveryConsumer.Start()
+	defer deliveryConsumer.Stop()
 
 	health.RegisterGinHealthCheck(server, firestoreClient)
 	userAccountController.RegisterRoutes(server)
 	smsController.RegisterRoutes(server)
 	phoneApiController.RegisterRoutes(server)
+	deliveryNotificationController.RegisterRoutes(server)
+
 	err = server.Run("0.0.0.0:8080")
 	if err != nil {
 		return
 	}
+}
+
+func PrintInfo() {
+	fmt.Printf("\n   _____                  _____       _                           \n  / ____|                / ____|     | |                          \n | (___  _ __ ___  ___  | |  __  __ _| |_ _____      ____ _ _   _ \n  \\___ \\| '_ ` _ \\/ __| | | |_ |/ _` | __/ _ \\ \\ /\\ / / _` | | | |\n  ____) | | | | | \\__ \\ | |__| | (_| | ||  __/\\ V  V / (_| | |_| |\n |_____/|_| |_| |_|___/  \\_____|\\__,_|\\__\\___| \\_/\\_/ \\__,_|\\__, |\n                                                             __/ |\n                                                            |___/ \n")
+	fmt.Printf("Version %s\n", VERSION)
+}
+
+func ConnectMongoDb(url string) (*mongo.Client, error) {
+	clientOptions := options.Client().ApplyURI(url).SetDirect(true)
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(context.TODO(), clientOptions)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Check the connection
+	if err = client.Ping(context.TODO(), nil); err != nil {
+		return nil, err
+	}
+
+	zap.L().Info("MongoClient connected")
+
+	return client, nil
 }

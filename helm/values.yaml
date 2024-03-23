@@ -4,6 +4,11 @@ labels:
   app: "sms-gateway-api"
 
 replicaCount: 1
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
 
 image:
   repository: petretiandrea/sms-gateway-service
@@ -28,6 +33,9 @@ secretFiles:
   - name: "firebase-admin-config"
     mountPath: "/be-aesthetic-admin-sdk.json"
     subPath: "firebase-admin.json"
+
+secretsRefs:
+  - sms-gateway
 
 readinessProbe:
   httpGet:

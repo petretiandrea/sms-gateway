@@ -6,6 +6,7 @@ metadata:
     {{- tpl (toYaml .Values.labels) . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  strategy: {{- tpl (toYaml .Values.strategy) . | nindent 4 }}
   selector:
     matchLabels:
       {{- tpl (toYaml .Values.labels) . | nindent 6 }}
