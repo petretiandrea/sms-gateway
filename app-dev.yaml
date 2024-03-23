@@ -3,6 +3,7 @@ app:
   name: 'sms-gateway-dev'
 
 mongo_connection_string: 'mongodb://localhost:27017'
+mongo_database_name: "smsgateway"
 
 firebase:
   credentials_file: 'be-aesthetic-admin-sdk.json'

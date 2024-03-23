@@ -75,7 +75,7 @@ func main() {
 	deliveryNotificationRepo := repos.NewMongoDeliveryNotificationRepository(mongoContext, mongoClient, appConfig.MongoDatabaseName)
 
 	webHookNotifier := userApi.HttpWebhookNotifier{}
-	deliveryNotificationService := application.NewDeliveryNotificationService(deliveryNotificationRepo, smsRepository, webHookNotifier, log)
+	deliveryNotificationService := application.NewDeliveryNotificationService(deliveryNotificationRepo, smsRepository, webHookNotifier)
 	userAccountService := application.NewUserAccountService(accountRepository)
 
 	userAccountController := userApi.UserAccountController{

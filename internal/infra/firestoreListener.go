@@ -4,6 +4,7 @@ import (
 	"cloud.google.com/go/firestore"
 	"context"
 	"fmt"
+	"time"
 )
 
 type FirestoreEventListener struct {
@@ -26,9 +27,9 @@ func (listener *FirestoreEventListener) Changes() <-chan firestore.DocumentChang
 	return listener.outbox
 }
 
-func (listener *FirestoreEventListener) ListenChanges() {
+func (listener *FirestoreEventListener) ListenChanges(resumeAt time.Time) {
 	docReference := listener.firestore.Collection(listener.collection)
-	docIterator := docReference.Snapshots(listener.context)
+	docIterator := docReference.Where("updatedAt", ">=", resumeAt).Snapshots(listener.context)
 	defer docIterator.Stop()
 	for {
 		snapshot, err := docIterator.Next()

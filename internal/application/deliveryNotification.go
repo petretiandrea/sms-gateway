@@ -18,9 +18,13 @@ func NewDeliveryNotificationService(
 	repo domain.DeliveryNotificationConfigRepository,
 	smsRepository domain.Repository,
 	webhookNotifier domain.WebhookNotifier,
-	log *zap.Logger,
 ) DeliveryNotificationService {
-	return DeliveryNotificationService{repo: repo, smsRepository: smsRepository, webhookNotifier: webhookNotifier, log: log}
+	return DeliveryNotificationService{
+		repo:            repo,
+		smsRepository:   smsRepository,
+		webhookNotifier: webhookNotifier,
+		log:             zap.L().Named("delivery_notification_service"),
+	}
 }
 
 func (service *DeliveryNotificationService) UpdateDeliveryConfig(
@@ -49,16 +53,19 @@ func (service *DeliveryNotificationService) DisableDeliveryNotification(
 }
 
 func (service *DeliveryNotificationService) NotifyDelivery(sms domain.Sms) error {
-	if sms := service.smsRepository.FindById(sms.Id); sms != nil {
-		if config := service.repo.FindById(sms.UserId); config != nil {
-			if config.Enabled {
-				return service.webhookNotifier.Notify(sms, config.WebhookURL)
-			}
-			return nil
-		} else {
-			return errors.New(fmt.Sprintf("Not webhook configuration found for userId %s", sms.UserId))
-		}
-	} else {
+	if sms := service.smsRepository.FindById(sms.Id); sms == nil {
 		return errors.New(fmt.Sprintf("Sms with id %s not found", sms.Id))
+	} else {
+		if sms.IsSent {
+			if config := service.repo.FindById(sms.UserId); config != nil {
+				if config.Enabled {
+					if err := service.webhookNotifier.Notify(sms, config.WebhookURL); err != nil {
+						return err
+					}
+					service.log.Info("Delivery notification sent", zap.String("smsId", string(sms.Id)))
+				}
+			}
+		}
 	}
+	return nil
 }

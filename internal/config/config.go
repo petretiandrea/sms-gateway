@@ -16,7 +16,7 @@ type AppConfig struct {
 	} `yaml:"firebase"`
 	DryRun                string `yaml:"dry_run"`
 	MongoConnectionString string `yaml:"mongo_connection_string"`
-	MongoDatabaseName     string `yaml:"mongo_database"`
+	MongoDatabaseName     string `yaml:"mongo_database_name"`
 }
 
 func LoadConfig(configPath string) AppConfig {
