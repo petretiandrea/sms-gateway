@@ -5,8 +5,6 @@ on:
   push:
     branches:
       - main
-  release:
-    types: [published]
 
 env:
   TARGET_PLATFORMS: linux/amd64, linux/arm64
@@ -34,6 +32,31 @@ jobs:
         id: buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Setup Node 20.x
+        uses: actions/setup-node@v4.0.2
+        with:
+          node-version: 20
+
+      - name: Semantic Release (Dry Run)
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v4
+        with:
+          semantic_version: 23.0.2
+          branches: |
+            [ 'main', 'next' ]
+          extra_plugins: |
+            @semantic-release/commit-analyzer@11.1.0
+            @semantic-release/release-notes-generator@12.1.0
+            @semantic-release/git@10.0.1
+            @semantic-release/github@9.2.6
+          dry_run: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update of Go version file with the new version
+        if: steps.semantic.outputs.new_release_published == 'true'
+        run: sed -i -e "s/const VERSION =.*/const VERSION =${{ steps.semantic.outputs.new_release_version }}/g" cmd/main.go
+
       - name: Docker meta for SMS Gateway Service
         id: meta
         uses: docker/metadata-action@v4
@@ -41,9 +64,7 @@ jobs:
           images: petretiandrea/sms-gateway-service
           tags: |
             type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}.{{patch}}
+            type=semver,pattern={{version}},value=${{ steps.semantic.outputs.new_release_version }}
 
       - name: Build and push SMS Gateway Service
         uses: docker/build-push-action@v3
@@ -55,9 +76,24 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           platforms: ${{ env.TARGET_PLATFORMS }}
 
+      - name: Semantic Release
+        uses: cycjimmy/semantic-release-action@v4
+        with:
+          semantic_version: 23.0.2
+          branches: |
+            [ 'main', 'next' ]
+          extra_plugins: |
+            @semantic-release/commit-analyzer@11.1.0
+            @semantic-release/release-notes-generator@12.1.0
+            @semantic-release/git@10.0.1
+            @semantic-release/github@9.2.6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Get image tag for deploy
         id: tag_deploy
         run: echo "tag=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}" >> $GITHUB_OUTPUT;
+
 
   deploy:
     needs: [build]
