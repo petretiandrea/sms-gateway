@@ -2,6 +2,15 @@ name: Deploy Helm on K8S
 
 on:
   workflow_dispatch:
+    inputs:
+      microservice-name:
+        required: true
+        type: string
+        description: "The name of microservice to deploy"
+      helm-path:
+        required: true
+        type: string
+        description: "Path where find helm chart files"
   workflow_call:
     inputs:
       microservice-name:
@@ -39,7 +48,7 @@ jobs:
 
   deploy:
     needs: [ detect_environment ]
-    runs-on: [self-hosted, "${{ needs.detect_environment.outputs.runner }}", "${{ needs.detect_environment.outputs.arch }}" ]
+    runs-on: [self-hosted, prod, arm64 ]
 
     steps:
       - name: Checkout
