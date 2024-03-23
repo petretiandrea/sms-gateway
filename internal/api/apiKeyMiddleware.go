@@ -18,7 +18,7 @@ func NewApiKeyMiddleware(accountService application.UserAccountService) gin.Hand
 				return
 			}
 		}
-		c.AbortWithStatusJSON(http.StatusBadRequest, errors.New("invalid ApiKey"))
+		c.AbortWithStatusJSON(http.StatusUnauthorized, errors.New("invalid ApiKey"))
 		return
 	}
 }

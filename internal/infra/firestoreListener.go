@@ -37,7 +37,6 @@ func (listener *FirestoreEventListener) ListenChanges() {
 		}
 
 		for _, change := range snapshot.Changes {
-			fmt.Println("Change", change.Doc.Data())
 			listener.outbox <- change
 		}
 	}
