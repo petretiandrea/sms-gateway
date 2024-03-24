@@ -30,7 +30,7 @@ func LoadConfig(configPath string) AppConfig {
 	decoder := yaml.NewDecoder(f)
 	err = decoder.Decode(&cfg)
 	if err != nil {
-		panic(err)
+		fmt.Println("No config file found", err)
 	}
 	err = envconfig.Process("", &cfg)
 	if err != nil {

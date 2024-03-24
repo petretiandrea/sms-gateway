@@ -27,7 +27,7 @@ func main() {
 	PrintInfo()
 	log, _ := zap.NewProduction()
 	zap.ReplaceGlobals(log)
-	appConfig := config.LoadConfig("app-dev.yaml")
+	appConfig := config.LoadConfig("app.yaml")
 	server := gin.New()
 	server.Use(ginzap.GinzapWithConfig(log, &ginzap.Config{
 		TimeFormat: time.RFC3339,
