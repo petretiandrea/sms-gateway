@@ -30,10 +30,10 @@ envConfig:
   DRYRUN: "false"
 
 secretKeyRef:
-  - name: 'MONGO_CONNECTION_STRING'
+  - name: 'MONGOCONNECTIONSTRING'
     secretRefName: 'sms-gateway'
     key: 'MONGO_CONNECTION_STRING'
-  - name: 'MONGO_DATABASE_NAME'
+  - name: 'MONGODATABASENAME'
     secretRefName: 'sms-gateway'
     key: 'MONGO_DATABASE_NAME'
 
