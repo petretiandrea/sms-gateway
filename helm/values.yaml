@@ -29,13 +29,18 @@ envConfig:
   FIREBASECONFIG_PHONE: phone
   DRYRUN: "false"
 
+secretKeyRef:
+  - name: 'MONGO_CONNECTION_STRING'
+    secretRefName: 'sms-gateway'
+    key: 'MONGO_CONNECTION_STRING'
+  - name: 'MONGO_DATABASE_NAME'
+    secretRefName: 'sms-gateway'
+    key: 'MONGO_DATABASE_NAME'
+
 secretFiles:
   - name: "firebase-admin-config"
     mountPath: "/be-aesthetic-admin-sdk.json"
     subPath: "firebase-admin.json"
-
-secretsRefs:
-  - sms-gateway
 
 readinessProbe:
   httpGet:
