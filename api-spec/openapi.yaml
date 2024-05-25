@@ -1,0 +1,196 @@
+openapi: 3.0.0
+info:
+  title: SMS Gateway
+  description: ""
+  contact:
+    email: petretiandrea@gmail.com
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+servers:
+  - url: https://agenda.beaesthetic.it/customer-service/
+paths:
+  
+  /phone/:
+    post:
+      tags:
+        - phone
+      summary: "Register new phone"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterPhoneRequestDto"
+      responses:
+        '201':
+          description: "Phone registered"
+          content:
+            application/json:
+              schema:
+                type: string
+                format: uuid
+                description: "Phone ID"
+        '400':
+          description: "Invalid request"
+  /phone/{phoneId}:
+    put:
+      tags:
+        - phone
+      description: "Update fcm token"
+      operationId: updateFcmToken
+      parameters: 
+        - name: phoneId
+          required: true
+          in: path
+          description: "Phone id"
+          schema:
+            type: string
+            format: uuid
+          
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePhoneFirebaseTokenDto'
+      
+      responses:
+        '200':
+          description: "Update successfully"
+        '400':
+          description: "Invalid request"
+    get:
+      tags:
+        - phone
+      description: "Get phone"
+      operationId: getPhoneById
+      parameters: 
+        - name: phoneId
+          required: true
+          in: path
+          description: "Phone id"
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Update successfully"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhoneEntityResponse'
+        '400':
+          description: "Invalid request"
+        '404':
+          description: "Phone not found"
+    
+  
+  /account/:
+    post:
+      tags:
+        - account
+      summary: "Register new account"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAccountRequestDto"
+      responses:
+        '201':
+          description: "Account created"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountEntityDto"
+        '400':
+          description: "Invalid request"
+  /account/{accountId}:
+    get:
+      tags:
+        - account
+      description: "Get user account"
+      operationId: getAccountById
+      parameters: 
+        - name: accountId
+          required: true
+          in: path
+          description: "Account id"
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: "Account details"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountEntityDto'
+        '400':
+          description: "Invalid request"
+        '404':
+          description: "Account not found"
+  
+  # /sms/:
+  #   post:
+  #     tags:
+  #       - sms
+  #     description: "Send an sms"
+  
+  
+components:
+  schemas:
+    RegisterPhoneRequestDto:
+      type: object
+      properties:
+        phone:
+          type: string
+      required:
+        - phone
+    UpdatePhoneFirebaseTokenDto:
+      type: object
+      properties:
+        token:
+          type: string
+    PhoneEntityResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        phone:
+          type: string
+        account:
+          type: string
+          format: uuid
+        fcmToken:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    
+    CreateAccountRequestDto:
+      type: object
+      properties:
+        phoneNumber:
+          type: string
+      required:
+        - phoneNumber
+    
+    AccountEntityDto:
+      type: object
+      properties:
+        accountId:
+          type: string
+        phoneNumber:
+          type: string
+        apiKey:
+          type: string
+        isActive:
+          type: boolean
+      required:
+        - accountId
+        - phoneNumber
+        - apiKey
+    

@@ -8,6 +8,7 @@ import (
 )
 
 type AppConfig struct {
+	ServiceName    string `yaml:"service_name"`
 	FirebaseConfig struct {
 		CredentialsFile string `yaml:"credentials_file"`
 		Sms             string `yaml:"collection_sms"`

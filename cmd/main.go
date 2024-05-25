@@ -6,8 +6,7 @@ import (
 	"fmt"
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.uber.org/zap"
 	"google.golang.org/api/option"
 	userApi "sms-gateway/internal/api"
@@ -28,6 +27,16 @@ func main() {
 	log, _ := zap.NewProduction()
 	zap.ReplaceGlobals(log)
 	appConfig := config.LoadConfig("app.yaml")
+	cleanupTracer, errTracer := initTracer(OpenTelemetryConfig{
+		serviceName:    appConfig.ServiceName,
+		serviceVersion: VERSION,
+		ctx:            context.Background(),
+	})
+	if errTracer != nil {
+		log.Error("Failed to initialize OpenTelemetry!")
+	}
+	defer cleanupTracer()
+
 	server := gin.New()
 	server.Use(ginzap.GinzapWithConfig(log, &ginzap.Config{
 		TimeFormat: time.RFC3339,
@@ -35,6 +44,7 @@ func main() {
 		SkipPaths:  []string{"/health"},
 	}))
 	server.Use(ginzap.RecoveryWithZap(log, true))
+	server.Use(otelgin.Middleware(appConfig.ServiceName))
 
 	// create async firebase ctx
 	ctx := context.Background()
@@ -62,7 +72,7 @@ func main() {
 
 	// initialize mongo
 	mongoContext := context.Background()
-	mongoClient, err := ConnectMongoDb(appConfig.MongoConnectionString)
+	mongoClient, err := connectMongo(appConfig.MongoConnectionString)
 	if err != nil {
 		log.Error("Failed to initialize mongodb")
 		return
@@ -118,24 +128,4 @@ func main() {
 func PrintInfo() {
 	fmt.Printf("\n   _____                  _____       _                           \n  / ____|                / ____|     | |                          \n | (___  _ __ ___  ___  | |  __  __ _| |_ _____      ____ _ _   _ \n  \\___ \\| '_ ` _ \\/ __| | | |_ |/ _` | __/ _ \\ \\ /\\ / / _` | | | |\n  ____) | | | | | \\__ \\ | |__| | (_| | ||  __/\\ V  V / (_| | |_| |\n |_____/|_| |_| |_|___/  \\_____|\\__,_|\\__\\___| \\_/\\_/ \\__,_|\\__, |\n                                                             __/ |\n                                                            |___/ \n")
 	fmt.Printf("Version %s\n", VERSION)
-}
-
-func ConnectMongoDb(url string) (*mongo.Client, error) {
-	clientOptions := options.Client().ApplyURI(url).SetDirect(true)
-
-	// Connect to MongoDB
-	client, err := mongo.Connect(context.TODO(), clientOptions)
-
-	if err != nil {
-		return nil, err
-	}
-
-	// Check the connection
-	if err = client.Ping(context.TODO(), nil); err != nil {
-		return nil, err
-	}
-
-	zap.L().Info("MongoClient connected")
-
-	return client, nil
 }
