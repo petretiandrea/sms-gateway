@@ -5,34 +5,33 @@ import (
 	"net/http"
 	"sms-gateway/internal/application"
 	"sms-gateway/internal/domain"
+	"sms-gateway/internal/generated/openapi"
 )
-
-type EnableDeliveryNotificationRequest struct {
-	WebhookURL string `json:"webhookURL" binding:"required"`
-}
-
-type DeliveryNotificationConfigResponse struct {
-	WebhookURL string `json:"webhookURL" binding:"required"`
-	Enabled    bool   `json:"enabled" binding:"required"`
-}
 
 type DeliveryNotificationController struct {
 	Account              application.UserAccountService
 	DeliveryNotification application.DeliveryNotificationService
 }
 
-func (controller *DeliveryNotificationController) RegisterRoutes(gin *gin.Engine) {
-	router := gin.Group("/webhook")
-	router.Use(NewApiKeyMiddleware(controller.Account))
-	router.PUT("/enable", controller.enableWebhookNotification)
-	router.PUT("/disable", controller.disableWebhookNotification)
+func (d DeliveryNotificationController) WebhookDisablePut(c *gin.Context) {
+	user := c.MustGet("user").(domain.UserAccount)
+	if config := d.DeliveryNotification.DisableDeliveryNotification(
+		user.Id,
+	); config == nil {
+		c.JSON(http.StatusNotFound, "Configuration not found")
+	} else {
+		c.JSONP(http.StatusOK, openapi.WebhookEntityResponse{
+			WebhookURL: config.WebhookURL,
+			Enabled:    config.Enabled,
+		})
+	}
 }
 
-func (controller *DeliveryNotificationController) enableWebhookNotification(context *gin.Context) {
-	var request EnableDeliveryNotificationRequest
-	user := context.MustGet("user").(domain.UserAccount)
-	if err := context.BindJSON(&request); err != nil {
-		context.JSON(http.StatusBadRequest, err)
+func (d DeliveryNotificationController) WebhookEnablePut(c *gin.Context) {
+	var request openapi.EnableWebhookRequest
+	user := c.MustGet("user").(domain.UserAccount)
+	if err := c.BindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, err)
 		return
 	}
 	configToUpdate := domain.DeliveryNotificationConfig{
@@ -40,26 +39,16 @@ func (controller *DeliveryNotificationController) enableWebhookNotification(cont
 		Enabled:    true,
 		AccountId:  user.Id,
 	}
-	if config, err := controller.DeliveryNotification.UpdateDeliveryConfig(configToUpdate); err == nil {
-		context.JSONP(http.StatusOK, DeliveryNotificationConfigResponse{
+	if config, err := d.DeliveryNotification.UpdateDeliveryConfig(configToUpdate); err == nil {
+		c.JSONP(http.StatusOK, openapi.WebhookEntityResponse{
 			WebhookURL: config.WebhookURL,
 			Enabled:    config.Enabled,
 		})
 	} else {
-		context.JSON(http.StatusBadRequest, err)
+		c.JSON(http.StatusBadRequest, err)
 	}
 }
 
-func (controller *DeliveryNotificationController) disableWebhookNotification(context *gin.Context) {
-	user := context.MustGet("user").(domain.UserAccount)
-	if config := controller.DeliveryNotification.DisableDeliveryNotification(
-		user.Id,
-	); config == nil {
-		context.JSON(http.StatusNotFound, "Configuration not found")
-	} else {
-		context.JSONP(http.StatusOK, DeliveryNotificationConfigResponse{
-			WebhookURL: config.WebhookURL,
-			Enabled:    config.Enabled,
-		})
-	}
-}
+var (
+	_ openapi.WebhooksAPI = (*DeliveryNotificationController)(nil)
+)

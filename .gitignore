@@ -135,3 +135,5 @@ fabric.properties
 
 # End of https://www.toptal.com/developers/gitignore/api/goland+all,go,visualstudiocode
 .env
+
+internal/generated/.openapi-generator

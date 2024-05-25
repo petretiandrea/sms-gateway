@@ -3,24 +3,25 @@ package api
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
+	"fmt"
 	"net/http"
 	"sms-gateway/internal/domain"
+	"sms-gateway/internal/generated/openapi"
 )
 
 type HttpWebhookNotifier struct {
 }
 
 func (h HttpWebhookNotifier) Notify(sms *domain.Sms, webhookUrl string) error {
-	if notification, err := json.Marshal(SmsEntityResponse{
+	if notification, err := json.Marshal(openapi.SmsEntityResponse{
 		Id:           string(sms.Id),
 		To:           sms.To,
 		From:         sms.From.Number,
 		Content:      sms.Content,
-		UserId:       string(sms.UserId),
+		Owner:        string(sms.UserId),
 		CreatedAt:    sms.CreatedAt,
 		IsSent:       sms.IsSent,
-		SendAttempts: sms.SendAttempts,
+		SendAttempts: int32(sms.SendAttempts),
 	}); err != nil {
 		return err
 	} else {
@@ -28,8 +29,8 @@ func (h HttpWebhookNotifier) Notify(sms *domain.Sms, webhookUrl string) error {
 		if err != nil {
 			return err
 		}
-		if response.StatusCode != 200 {
-			return errors.New("webhook endpoint response is not successfully")
+		if response.StatusCode >= 300 {
+			return fmt.Errorf("webhook endpoint response is not successfully, responseCode %d", response.StatusCode)
 		}
 		return nil
 	}

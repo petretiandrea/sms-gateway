@@ -9,7 +9,8 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   version: 1.0.0
 servers:
-  - url: https://agenda.beaesthetic.it/customer-service/
+  - url: https://agenda.beaesthetic.it/
+  - url: https://localhost:8080/
 paths:
   
   /phone/:
@@ -17,6 +18,8 @@ paths:
       tags:
         - phone
       summary: "Register new phone"
+      security:
+        - ApiKeyAuth: [ ]
       requestBody:
         content:
           application/json:
@@ -37,9 +40,11 @@ paths:
     put:
       tags:
         - phone
+      security:
+        - ApiKeyAuth: [ ]
       description: "Update fcm token"
       operationId: updateFcmToken
-      parameters: 
+      parameters:
         - name: phoneId
           required: true
           in: path
@@ -47,13 +52,13 @@ paths:
           schema:
             type: string
             format: uuid
-          
+
       requestBody:
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdatePhoneFirebaseTokenDto'
-      
+
       responses:
         '200':
           description: "Update successfully"
@@ -62,9 +67,11 @@ paths:
     get:
       tags:
         - phone
+      security:
+        - ApiKeyAuth: [ ]
       description: "Get phone"
       operationId: getPhoneById
-      parameters: 
+      parameters:
         - name: phoneId
           required: true
           in: path
@@ -82,8 +89,7 @@ paths:
           description: "Invalid request"
         '404':
           description: "Phone not found"
-    
-  
+
   /account/:
     post:
       tags:
@@ -109,7 +115,7 @@ paths:
         - account
       description: "Get user account"
       operationId: getAccountById
-      parameters: 
+      parameters:
         - name: accountId
           required: true
           in: path
@@ -128,16 +134,148 @@ paths:
           description: "Invalid request"
         '404':
           description: "Account not found"
-  
-  # /sms/:
-  #   post:
-  #     tags:
-  #       - sms
-  #     description: "Send an sms"
-  
-  
+
+  /sms/{smsId}:
+    get:
+      tags:
+        - sms
+      summary: "Get an sms"
+      operationId: getSmsById
+      security:
+        - ApiKeyAuth: [ ]
+      parameters:
+        - in: path
+          name: smsId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: "Sms"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SmsEntityResponse"
+  /sms/:
+    post:
+      tags:
+        - sms
+      summary: "Send a new sms"
+      operationId: sendSms
+      security:
+        - ApiKeyAuth: [ ]
+      parameters:
+        - in: header
+          name: "Idempotency-Key"
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendSmsRequest"
+      responses:
+        "201":
+          description: "Send sms takes"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SmsEntityResponse"
+        '400':
+          description: "Invalid request"
+
+  /webhook/enable:
+    put:
+      tags:
+        - webhooks
+      summary: Enable webhook delivery
+      security:
+        - ApiKeyAuth: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnableWebhookRequest'
+      responses:
+        "200":
+          description: "Webhook registered"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookEntityResponse'
+        "400":
+          description: "Bad request"
+  /webhook/disable:
+    put:
+      tags:
+        - webhooks
+      description: Disable webhook delivery
+      security:
+        - ApiKeyAuth: [ ]
+      responses:
+        200:
+          description: "Successfully disabled webhook"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookEntityResponse'
+        400:
+          description: "Bad request"
+        404:
+          description: "Webhook not found"
+
 components:
   schemas:
+    WebhookEntityResponse:
+      type: object
+      properties:
+        webhookURL:
+          type: string
+        enabled:
+          type: boolean
+    EnableWebhookRequest:
+      type: object
+      properties:
+        webhookURL:
+          type: string
+      required:
+        - webhookURL
+    SmsEntityResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        content:
+          type: string
+        from:
+          type: string
+        to:
+          type: string
+        owner:
+          type: string
+          format: uuid
+        isSent:
+          type: boolean
+        sendAttempts:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+    SendSmsRequest:
+      type: object
+      properties:
+        content:
+          type: string
+        from:
+          type: string
+        to:
+          type: string
+      required:
+        - content
+        - from
+        - to
     RegisterPhoneRequestDto:
       type: object
       properties:
@@ -169,7 +307,7 @@ components:
         updatedAt:
           type: string
           format: date-time
-    
+
     CreateAccountRequestDto:
       type: object
       properties:
@@ -177,7 +315,7 @@ components:
           type: string
       required:
         - phoneNumber
-    
+
     AccountEntityDto:
       type: object
       properties:
@@ -189,8 +327,16 @@ components:
           type: string
         isActive:
           type: boolean
+        createAt:
+          type: string
+          format: date-time
       required:
         - accountId
         - phoneNumber
         - apiKey
-    
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: Api-Key

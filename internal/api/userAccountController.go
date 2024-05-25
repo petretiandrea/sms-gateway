@@ -1,42 +1,23 @@
 package api
 
 import (
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"sms-gateway/internal/application"
 	"sms-gateway/internal/domain"
-	"time"
-
-	"github.com/gin-gonic/gin"
+	"sms-gateway/internal/generated/openapi"
 )
-
-type CreateAccountRequest struct {
-	PhoneNumber string `json:"phoneNumber" binding:"required"`
-}
-
-type UserAccountResponse struct {
-	AccountId   string    `json:"accountId"`
-	PhoneNumber string    `json:"phoneNumber"`
-	ApiKey      string    `json:"apiKey,omitempty"`
-	IsActive    bool      `json:"isActive"`
-	CreateAt    time.Time `json:"createAt"`
-}
 
 type UserAccountController struct {
 	CreateUserAccountUseCase application.UserAccountService
 }
 
-func (controller *UserAccountController) RegisterRoutes(gin *gin.Engine) {
-	router := gin.Group("/account")
-	router.POST("/", controller.createUserAccount)
-	router.GET("/:accountId", controller.getUserAccount)
-}
-
-func (controller *UserAccountController) createUserAccount(context *gin.Context) {
-	var createRequest CreateAccountRequest
+func (controller UserAccountController) AccountPost(context *gin.Context) {
+	var createRequest openapi.CreateAccountRequestDto
 	if err := context.BindJSON(&createRequest); err == nil {
 		accountRequest := application.CreateNewAccountParams{Phone: createRequest.PhoneNumber}
 		if newAccount, err := controller.CreateUserAccountUseCase.CreateNewAccount(accountRequest); err == nil {
-			context.JSONP(http.StatusCreated, UserAccountResponse{
+			context.JSONP(http.StatusCreated, openapi.AccountEntityDto{
 				AccountId:   string(newAccount.Id),
 				PhoneNumber: newAccount.Phone,
 				ApiKey:      string(newAccount.ApiKey),
@@ -50,10 +31,10 @@ func (controller *UserAccountController) createUserAccount(context *gin.Context)
 	return
 }
 
-func (controller *UserAccountController) getUserAccount(context *gin.Context) {
+func (controller UserAccountController) GetAccountById(context *gin.Context) {
 	accountId := context.Param("accountId")
 	if foundAccount := controller.CreateUserAccountUseCase.GetUserAccount(domain.AccountID(accountId)); foundAccount != nil {
-		context.JSONP(http.StatusOK, UserAccountResponse{
+		context.JSONP(http.StatusOK, openapi.AccountEntityDto{
 			AccountId:   string(foundAccount.Id),
 			PhoneNumber: foundAccount.Phone,
 			IsActive:    !foundAccount.IsSuspended,
@@ -64,3 +45,7 @@ func (controller *UserAccountController) getUserAccount(context *gin.Context) {
 	}
 	return
 }
+
+var (
+	_ openapi.AccountAPI = (*UserAccountController)(nil)
+)

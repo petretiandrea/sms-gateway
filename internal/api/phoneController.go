@@ -5,48 +5,43 @@ import (
 	"net/http"
 	"sms-gateway/internal/application"
 	"sms-gateway/internal/domain"
-	"time"
+	"sms-gateway/internal/generated/openapi"
 )
-
-type RegisterPhoneRequest struct {
-	Phone string `json:"phone" binding:"required"`
-}
-
-type UpdateFCMRequest struct {
-	Token string `json:"token" binding:"required"`
-}
-
-type PhoneResponse struct {
-	Id        string    `json:"id" binding:"required"`
-	Phone     string    `json:"phone" binding:"required"`
-	Account   string    `json:"account" binding:"required"`
-	FCMToken  string    `json:"fcmToken" binding:"required"`
-	CreatedAt time.Time `json:"createdAt" binding:"required"`
-	UpdatedAt time.Time `json:"updatedAt" binding:"required"`
-}
 
 type PhoneApiController struct {
 	Phone   application.PhoneService
 	Account application.UserAccountService
 }
 
-func (controller *PhoneApiController) RegisterRoutes(gin *gin.Engine) {
-	router := gin.Group("/phone")
-	router.Use(NewApiKeyMiddleware(controller.Account))
-	router.POST("/", controller.registerPhone)
-	router.PUT("/:phoneId", controller.updateToken)
-	router.GET("/:phoneId", controller.getPhone)
+func (p PhoneApiController) GetPhoneById(c *gin.Context) {
+	phoneId := c.Param("phoneId")
+	if device, err := p.Phone.GetPhoneById(domain.PhoneId(phoneId)); device != nil {
+		c.JSONP(http.StatusOK, openapi.PhoneEntityResponse{
+			Id:        string(device.Id),
+			Phone:     device.Phone.Number,
+			Account:   string(device.UserId),
+			FcmToken:  string(device.Token),
+			CreatedAt: device.CreatedAt,
+			UpdatedAt: device.UpdatedAt,
+		})
+	} else {
+		if err == nil {
+			c.AbortWithStatus(http.StatusNotFound)
+		} else {
+			c.JSON(http.StatusBadRequest, err)
+		}
+	}
 }
 
-func (controller *PhoneApiController) registerPhone(context *gin.Context) {
-	var sendRequest RegisterPhoneRequest
+func (p PhoneApiController) PhonePost(context *gin.Context) {
+	var sendRequest openapi.RegisterPhoneRequestDto
 	user := context.MustGet("user").(domain.UserAccount)
 	if err := context.BindJSON(&sendRequest); err != nil {
 		context.JSON(http.StatusBadRequest, err)
 		return
 	}
 
-	if device, err := controller.Phone.RegisterPhone(
+	if device, err := p.Phone.RegisterPhone(
 		domain.PhoneNumber{Number: sendRequest.Phone},
 		user.Id,
 	); err == nil {
@@ -56,39 +51,23 @@ func (controller *PhoneApiController) registerPhone(context *gin.Context) {
 	}
 }
 
-func (controller *PhoneApiController) updateToken(context *gin.Context) {
-	var request UpdateFCMRequest
-	phoneId := context.Param("phoneId")
-	if err := context.BindJSON(&request); err != nil {
-		context.JSON(http.StatusBadRequest, err)
+func (p PhoneApiController) UpdateFcmToken(c *gin.Context) {
+	var request openapi.UpdatePhoneFirebaseTokenDto
+	phoneId := c.Param("phoneId")
+	if err := c.BindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, err)
 		return
 	}
-	if device, err := controller.Phone.UpdateFCMToken(
+	if device, err := p.Phone.UpdateFCMToken(
 		domain.PhoneId(phoneId),
 		domain.FCMToken(request.Token),
 	); err == nil {
-		context.JSONP(http.StatusOK, device.Id)
+		c.JSONP(http.StatusOK, device.Id)
 	} else {
-		context.JSON(http.StatusBadRequest, err)
+		c.JSON(http.StatusBadRequest, err)
 	}
 }
 
-func (controller *PhoneApiController) getPhone(context *gin.Context) {
-	phoneId := context.Param("phoneId")
-	if device, err := controller.Phone.GetPhoneById(domain.PhoneId(phoneId)); device != nil {
-		context.JSONP(http.StatusOK, PhoneResponse{
-			Id:        string(device.Id),
-			Phone:     device.Phone.Number,
-			Account:   string(device.UserId),
-			FCMToken:  string(device.Token),
-			CreatedAt: device.CreatedAt,
-			UpdatedAt: device.UpdatedAt,
-		})
-	} else {
-		if err == nil {
-			context.AbortWithStatus(http.StatusNotFound)
-		} else {
-			context.JSON(http.StatusBadRequest, err)
-		}
-	}
-}
+var (
+	_ openapi.PhoneAPI = (*PhoneApiController)(nil)
+)

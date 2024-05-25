@@ -9,14 +9,17 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.uber.org/zap"
 	"google.golang.org/api/option"
+	"net/http"
 	userApi "sms-gateway/internal/api"
 	"sms-gateway/internal/application"
 	"sms-gateway/internal/config"
 	"sms-gateway/internal/events"
+	"sms-gateway/internal/generated/openapi"
 	"sms-gateway/internal/health"
 	"sms-gateway/internal/infra"
 	"sms-gateway/internal/infra/repos"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -91,36 +94,37 @@ func main() {
 	deliveryNotificationService := application.NewDeliveryNotificationService(deliveryNotificationRepo, smsRepository, webHookNotifier)
 	userAccountService := application.NewUserAccountService(accountRepository)
 
-	userAccountController := userApi.UserAccountController{
-		CreateUserAccountUseCase: application.NewUserAccountService(accountRepository),
-	}
-
-	smsController := userApi.SmsApiController{
-		Account: userAccountService,
-		Sms:     application.NewSmsService(&smsRepository, application.NewPhoneService(&phoneRepository), pushService),
-	}
-
-	phoneApiController := userApi.PhoneApiController{
-		Phone:   application.NewPhoneService(&phoneRepository),
-		Account: userAccountService,
-	}
-
-	deliveryNotificationController := userApi.DeliveryNotificationController{
-		Account:              userAccountService,
-		DeliveryNotification: deliveryNotificationService,
-	}
-
 	listener := infra.NewFirestoreEventListener(ctx, firestoreClient, appConfig.FirebaseConfig.Sms)
 
 	deliveryConsumer := events.NewDeliveryNotificationConsumer(listener, deliveryNotificationService)
 	go deliveryConsumer.Start()
 	defer deliveryConsumer.Stop()
 
+	server.Use(userApi.NewApiKeyMiddleware(userAccountService, func(request *http.Request) bool {
+		return strings.Contains(request.URL.Path, "/phone") ||
+			strings.Contains(request.URL.Path, "/sms") ||
+			strings.Contains(request.URL.Path, "/webhook")
+	}))
+
 	health.RegisterGinHealthCheck(server, firestoreClient)
-	userAccountController.RegisterRoutes(server)
-	smsController.RegisterRoutes(server)
-	phoneApiController.RegisterRoutes(server)
-	deliveryNotificationController.RegisterRoutes(server)
+
+	openapi.NewRouterWithGinEngine(server, openapi.ApiHandleFunctions{
+		AccountAPI: userApi.UserAccountController{
+			CreateUserAccountUseCase: application.NewUserAccountService(accountRepository),
+		},
+		PhoneAPI: userApi.PhoneApiController{
+			Phone:   application.NewPhoneService(&phoneRepository),
+			Account: userAccountService,
+		},
+		SmsAPI: userApi.SmsApiController{
+			Account: userAccountService,
+			Sms:     application.NewSmsService(&smsRepository, application.NewPhoneService(&phoneRepository), pushService),
+		},
+		WebhooksAPI: userApi.DeliveryNotificationController{
+			Account:              userAccountService,
+			DeliveryNotification: deliveryNotificationService,
+		},
+	})
 
 	err = server.Run("0.0.0.0:8080")
 	if err != nil {
