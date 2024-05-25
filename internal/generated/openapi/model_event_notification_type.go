@@ -10,12 +10,9 @@
 
 package openapi
 
-type SendSmsRequest struct {
-	Content string `json:"content"`
+type EventNotificationType string
 
-	From string `json:"from"`
-
-	To string `json:"to"`
-
-	Metadata map[string]string `json:"metadata,omitempty"`
-}
+// List of EventNotificationType
+const (
+	MESSAGE_DELIVERED EventNotificationType = "message.delivered"
+)

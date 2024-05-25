@@ -18,6 +18,7 @@ paths:
       tags:
         - phone
       summary: "Register new phone"
+      operationId: registerPhone
       security:
         - ApiKeyAuth: [ ]
       requestBody:
@@ -95,6 +96,7 @@ paths:
       tags:
         - account
       summary: "Register new account"
+      operationId: registerAccount
       requestBody:
         content:
           application/json:
@@ -175,6 +177,20 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/SendSmsRequest"
+      callbacks:
+        messageCallback:
+          '/callbackUrl':
+            post:
+              operationId: notifyMessageDelivery
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/EventNotificationDto'
+              responses:
+                200:
+                  description: "Callback accepted"
       responses:
         "201":
           description: "Send sms takes"
@@ -241,6 +257,19 @@ components:
           type: string
       required:
         - webhookURL
+    EventNotificationType:
+      type: string
+      enum:
+        - message.delivered
+    EventNotificationDto:
+      type: object
+      properties:
+        eventType:
+          $ref: '#/components/schemas/EventNotificationType'
+        data:
+          $ref: '#/components/schemas/SmsEntityResponse'
+        metadata:
+          $ref: '#/components/schemas/AdditionalMetadata'
     SmsEntityResponse:
       type: object
       properties:
@@ -272,10 +301,16 @@ components:
           type: string
         to:
           type: string
+        metadata:
+          $ref: '#/components/schemas/AdditionalMetadata'
       required:
         - content
         - from
         - to
+    AdditionalMetadata:
+      type: object
+      additionalProperties:
+        type: string
     RegisterPhoneRequestDto:
       type: object
       properties:

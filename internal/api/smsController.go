@@ -50,6 +50,7 @@ func (s SmsApiController) SendSms(c *gin.Context) {
 		Content:        sendRequest.Content,
 		IdempotencyKey: idempotencyKey,
 		Account:        user,
+		Metadata:       sendRequest.Metadata,
 	}
 	if createMessage, err := s.Sms.SendSMS(sendCommand); err == nil {
 		c.JSONP(http.StatusCreated, openapi.SmsEntityResponse{

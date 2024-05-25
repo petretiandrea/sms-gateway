@@ -19,6 +19,7 @@ type Sms struct {
 	CreatedAt      time.Time
 	LastUpdateAt   time.Time
 	IdempotencyKey string
+	Metadata       map[string]string
 }
 
 type Repository interface {
@@ -27,7 +28,7 @@ type Repository interface {
 	FindExisting(idempotencyKey string) *Sms
 }
 
-func CreateNewSMS(userId AccountID, from PhoneNumber, to PhoneNumber, content string, idempotencyKey string) Sms {
+func CreateNewSMS(userId AccountID, from PhoneNumber, to PhoneNumber, content string, idempotencyKey string, metadata map[string]string) Sms {
 	return Sms{
 		Id:             SmsId(uuid.NewString()),
 		UserId:         userId,
@@ -38,5 +39,6 @@ func CreateNewSMS(userId AccountID, from PhoneNumber, to PhoneNumber, content st
 		SendAttempts:   0,
 		CreatedAt:      time.Now(),
 		IdempotencyKey: idempotencyKey,
+		Metadata:       metadata,
 	}
 }

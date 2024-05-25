@@ -76,16 +76,16 @@ type ApiHandleFunctions struct {
 func getRoutes(handleFunctions ApiHandleFunctions) []Route {
 	return []Route{
 		{
-			"AccountPost",
-			http.MethodPost,
-			"/account/",
-			handleFunctions.AccountAPI.AccountPost,
-		},
-		{
 			"GetAccountById",
 			http.MethodGet,
 			"/account/:accountId",
 			handleFunctions.AccountAPI.GetAccountById,
+		},
+		{
+			"RegisterAccount",
+			http.MethodPost,
+			"/account/",
+			handleFunctions.AccountAPI.RegisterAccount,
 		},
 		{
 			"GetPhoneById",
@@ -94,10 +94,10 @@ func getRoutes(handleFunctions ApiHandleFunctions) []Route {
 			handleFunctions.PhoneAPI.GetPhoneById,
 		},
 		{
-			"PhonePost",
+			"RegisterPhone",
 			http.MethodPost,
 			"/phone/",
-			handleFunctions.PhoneAPI.PhonePost,
+			handleFunctions.PhoneAPI.RegisterPhone,
 		},
 		{
 			"UpdateFcmToken",

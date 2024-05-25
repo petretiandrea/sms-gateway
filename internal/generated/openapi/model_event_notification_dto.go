@@ -10,12 +10,10 @@
 
 package openapi
 
-type SendSmsRequest struct {
-	Content string `json:"content"`
+type EventNotificationDto struct {
+	EventType EventNotificationType `json:"eventType,omitempty"`
 
-	From string `json:"from"`
-
-	To string `json:"to"`
+	Data SmsEntityResponse `json:"data,omitempty"`
 
 	Metadata map[string]string `json:"metadata,omitempty"`
 }

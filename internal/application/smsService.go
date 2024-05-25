@@ -17,6 +17,7 @@ type SendSmsCommand struct {
 	From           string
 	Account        domain.UserAccount
 	IdempotencyKey string
+	Metadata       map[string]string
 }
 
 func NewSmsService(repo domain.Repository, phoneService PhoneService, pushService infra.FirebasePushNotification) SmsService {
@@ -28,12 +29,19 @@ func (service *SmsService) SendSMS(params SendSmsCommand) (*domain.Sms, error) {
 		return message, nil
 	} else {
 		// retrieve phoneAccount associated
+		var metadata map[string]string
+		if params.Metadata == nil {
+			metadata = make(map[string]string)
+		} else {
+			metadata = params.Metadata
+		}
 		message := domain.CreateNewSMS(
 			params.Account.Id,
 			domain.PhoneNumber{Number: params.From},
 			domain.PhoneNumber{Number: params.To},
 			params.Content,
 			params.IdempotencyKey,
+			metadata,
 		)
 		_, err := service.repo.Save(message)
 		if err != nil {

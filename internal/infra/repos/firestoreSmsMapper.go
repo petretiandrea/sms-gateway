@@ -6,15 +6,16 @@ import (
 )
 
 type MessageFirestoreEntity struct {
-	From           string    `firestore:"from"`
-	To             string    `firestore:"to"`
-	Content        string    `firestore:"content"`
-	IsSent         bool      `firestore:"isSent"`
-	SendAttempts   uint8     `firestore:"sendAttempts"`
-	Owner          string    `firestore:"owner"`
-	IdempotencyKey string    `firestore:"idempotencyKey"`
-	CreatedAt      time.Time `firestore:"createdAt"`
-	UpdatedAt      time.Time `firestore:"updatedAt"`
+	From           string            `firestore:"from"`
+	To             string            `firestore:"to"`
+	Content        string            `firestore:"content"`
+	IsSent         bool              `firestore:"isSent"`
+	SendAttempts   uint8             `firestore:"sendAttempts"`
+	Owner          string            `firestore:"owner"`
+	IdempotencyKey string            `firestore:"idempotencyKey"`
+	CreatedAt      time.Time         `firestore:"createdAt"`
+	UpdatedAt      time.Time         `firestore:"updatedAt"`
+	Metadata       map[string]string `firestore:additionalData`
 }
 
 func smsMapToEntity(message domain.Sms) MessageFirestoreEntity {
@@ -28,6 +29,7 @@ func smsMapToEntity(message domain.Sms) MessageFirestoreEntity {
 		IdempotencyKey: message.IdempotencyKey,
 		CreatedAt:      message.CreatedAt,
 		UpdatedAt:      time.Now(),
+		Metadata:       message.Metadata,
 	}
 }
 
@@ -42,5 +44,6 @@ func (entity *MessageFirestoreEntity) ToMessage(id string) *domain.Sms {
 		IdempotencyKey: entity.IdempotencyKey,
 		CreatedAt:      entity.CreatedAt,
 		LastUpdateAt:   entity.UpdatedAt,
+		Metadata:       entity.Metadata,
 	}
 }

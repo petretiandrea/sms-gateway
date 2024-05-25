@@ -19,9 +19,9 @@ type PhoneAPI interface {
 	// GetPhoneById Get /phone/:phoneId
 	GetPhoneById(c *gin.Context)
 
-	// PhonePost Post /phone/
+	// RegisterPhone Post /phone/
 	// Register new phone
-	PhonePost(c *gin.Context)
+	RegisterPhone(c *gin.Context)
 
 	// UpdateFcmToken Put /phone/:phoneId
 	UpdateFcmToken(c *gin.Context)
