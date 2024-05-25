@@ -28,6 +28,9 @@ envConfig:
   FIREBASECONFIG_USERACCOUNT: user-account
   FIREBASECONFIG_PHONE: phone
   DRYRUN: "false"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://opentelemetry-collector.monitoring.svc.cluster.local:4317"
+  OTEL_EXPORTER_OTLP_INSECURE: "true"
+  OTEL_EXPORTER_OTLP_COMPRESSION: "gzip"
 
 secretKeyRef:
   - name: 'MONGOCONNECTIONSTRING'

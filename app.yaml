@@ -2,6 +2,8 @@
 app:
   name: 'sms-gateway'
 
+service_name: 'sms-gateway'
+
 firebase:
   credentials_file: 'be-aesthetic-admin-sdk.json'
   collection_sms: 'sms'
