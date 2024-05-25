@@ -44,7 +44,10 @@ func main() {
 		SkipPaths:  []string{"/health"},
 	}))
 	server.Use(ginzap.RecoveryWithZap(log, true))
-	server.Use(otelgin.Middleware(appConfig.ServiceName))
+	server.Use(otelgin.Middleware(
+		appConfig.ServiceName,
+		otelgin.WithFilter(health.FilterHealthCheck),
+	))
 
 	// create async firebase ctx
 	ctx := context.Background()

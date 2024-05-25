@@ -5,11 +5,16 @@ import (
 	"github.com/alexliesenfeld/health"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"strings"
 	"time"
 )
 
 func RegisterGinHealthCheck(gin *gin.Engine, client *firestore.Client) {
 	gin.GET("/health", healthCheckHandler(createHealthCheck(client)))
+}
+
+func FilterHealthCheck(request *http.Request) bool {
+	return !strings.Contains(request.URL.Path, "health")
 }
 
 func healthCheckHandler(healthCheck health.Checker) func(ctx *gin.Context) {
