@@ -11,12 +11,13 @@ type SmsService struct {
 	notification infra.FirebasePushNotification
 }
 
-type SendSmsCommand struct {
+type CreateMessageCommand struct {
 	Content        string
 	To             string
 	From           string
 	Account        domain.UserAccount
 	IdempotencyKey string
+	WebhookUrl     string
 	Metadata       map[string]string
 }
 
@@ -24,7 +25,7 @@ func NewSmsService(repo domain.Repository, phoneService PhoneService, pushServic
 	return SmsService{repo: repo, phone: phoneService, notification: pushService}
 }
 
-func (service *SmsService) SendSMS(params SendSmsCommand) (*domain.Sms, error) {
+func (service *SmsService) SendSMS(params CreateMessageCommand) (*domain.Sms, error) {
 	if message := service.repo.FindExisting(params.IdempotencyKey); message != nil {
 		return message, nil
 	} else {
@@ -42,6 +43,7 @@ func (service *SmsService) SendSMS(params SendSmsCommand) (*domain.Sms, error) {
 			params.Content,
 			params.IdempotencyKey,
 			metadata,
+			domain.WebhookConfiguration{Url: params.WebhookUrl},
 		)
 		_, err := service.repo.Save(message)
 		if err != nil {

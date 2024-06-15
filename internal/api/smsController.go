@@ -44,12 +44,13 @@ func (s SmsApiController) SendSms(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, "Missing mandatory idempotency key")
 		return
 	}
-	sendCommand := application.SendSmsCommand{
+	sendCommand := application.CreateMessageCommand{
 		From:           sendRequest.From,
 		To:             sendRequest.To,
 		Content:        sendRequest.Content,
 		IdempotencyKey: idempotencyKey,
 		Account:        user,
+		WebhookUrl:     sendRequest.Webhook.Url,
 		Metadata:       sendRequest.Metadata,
 	}
 	if createMessage, err := s.Sms.SendSMS(sendCommand); err == nil {

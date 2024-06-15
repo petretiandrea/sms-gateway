@@ -10,17 +10,6 @@
 
 package openapi
 
-import (
-	"github.com/gin-gonic/gin"
-)
-
-type SmsAPI interface {
-
-	// GetSmsById Get /messages/:smsId
-	// Get an sms
-	GetSmsById(c *gin.Context)
-
-	// SendSms Post /messages/
-	// Send a new sms
-	SendSms(c *gin.Context)
+type WebhookOnDemandConfig struct {
+	Url string `json:"url,omitempty"`
 }

@@ -19,7 +19,12 @@ type Sms struct {
 	CreatedAt      time.Time
 	LastUpdateAt   time.Time
 	IdempotencyKey string
+	Configuration  WebhookConfiguration
 	Metadata       map[string]string
+}
+
+type WebhookConfiguration struct {
+	Url string
 }
 
 type Repository interface {
@@ -28,7 +33,8 @@ type Repository interface {
 	FindExisting(idempotencyKey string) *Sms
 }
 
-func CreateNewSMS(userId AccountID, from PhoneNumber, to PhoneNumber, content string, idempotencyKey string, metadata map[string]string) Sms {
+func CreateNewSMS(userId AccountID, from PhoneNumber, to PhoneNumber, content string, idempotencyKey string, metadata map[string]string,
+	configuration WebhookConfiguration) Sms {
 	return Sms{
 		Id:             SmsId(uuid.NewString()),
 		UserId:         userId,
@@ -40,5 +46,6 @@ func CreateNewSMS(userId AccountID, from PhoneNumber, to PhoneNumber, content st
 		CreatedAt:      time.Now(),
 		IdempotencyKey: idempotencyKey,
 		Metadata:       metadata,
+		Configuration:  configuration,
 	}
 }

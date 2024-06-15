@@ -17,5 +17,7 @@ type SendSmsRequest struct {
 
 	To string `json:"to"`
 
+	Webhook WebhookOnDemandConfig `json:"webhook,omitempty"`
+
 	Metadata map[string]string `json:"metadata,omitempty"`
 }

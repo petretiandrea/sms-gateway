@@ -16,13 +16,13 @@ import (
 
 type PhoneAPI interface {
 
-	// GetPhoneById Get /phone/:phoneId
+	// GetPhoneById Get /phones/:phoneId
 	GetPhoneById(c *gin.Context)
 
-	// RegisterPhone Post /phone/
+	// RegisterPhone Post /phones/
 	// Register new phone
 	RegisterPhone(c *gin.Context)
 
-	// UpdateFcmToken Put /phone/:phoneId
+	// UpdateFcmToken Put /phones/:phoneId
 	UpdateFcmToken(c *gin.Context)
 }
