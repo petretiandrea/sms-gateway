@@ -1,6 +1,7 @@
 package application
 
 import (
+	"github.com/pkg/errors"
 	"sms-gateway/internal/domain"
 	"sms-gateway/internal/infra"
 )
@@ -62,4 +63,25 @@ func (service *SmsService) SendSMS(params CreateMessageCommand) (*domain.Sms, er
 
 func (service *SmsService) GetSMS(id domain.SmsId) *domain.Sms {
 	return service.repo.FindById(id)
+}
+
+func (service *SmsService) RegisterAttempt(
+	id domain.SmsId,
+	accountID domain.AccountID,
+	attempt domain.Attempt,
+) (*domain.Sms, error) {
+	sms := service.repo.FindById(id)
+	if sms == nil {
+		return nil, nil
+	}
+	if sms.UserId == accountID {
+		sms.RegisterAttempt(attempt)
+		return service.repo.Save(*sms)
+	} else {
+		return nil, errors.Wrapf(
+			domain.ErrorNotMessageOwner,
+			"Not owner of sms [%s]",
+			sms.Id,
+		)
+	}
 }

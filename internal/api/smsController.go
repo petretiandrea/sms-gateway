@@ -14,16 +14,16 @@ type SmsApiController struct {
 }
 
 func (s SmsApiController) GetSmsById(c *gin.Context) {
-	if message := s.Sms.GetSMS(domain.SmsId(c.Param("smsId"))); message == nil {
+	if message := s.Sms.GetSMS(domain.SmsId(c.Param("smsId"))); message != nil {
 		c.JSON(http.StatusOK, openapi.SmsEntityResponse{
-			Id:           string(message.Id),
-			To:           message.To,
-			From:         message.From.Number,
-			Content:      message.Content,
-			Owner:        string(message.UserId),
-			CreatedAt:    message.CreatedAt,
-			IsSent:       message.IsSent,
-			SendAttempts: int32(message.SendAttempts),
+			Id:          string(message.Id),
+			To:          message.To,
+			From:        message.From.Number,
+			Content:     message.Content,
+			Owner:       string(message.UserId),
+			CreatedAt:   message.CreatedAt,
+			IsSent:      message.IsSent,
+			LastAttempt: lastAttemptToDto(message.LastAttempt),
 		})
 		return
 	}
@@ -55,18 +55,34 @@ func (s SmsApiController) SendSms(c *gin.Context) {
 	}
 	if createMessage, err := s.Sms.SendSMS(sendCommand); err == nil {
 		c.JSONP(http.StatusCreated, openapi.SmsEntityResponse{
-			Id:           string(createMessage.Id),
-			To:           createMessage.To,
-			From:         createMessage.From.Number,
-			Content:      createMessage.Content,
-			Owner:        string(createMessage.UserId),
-			CreatedAt:    createMessage.CreatedAt,
-			IsSent:       createMessage.IsSent,
-			SendAttempts: int32(createMessage.SendAttempts),
+			Id:          string(createMessage.Id),
+			To:          createMessage.To,
+			From:        createMessage.From.Number,
+			Content:     createMessage.Content,
+			Owner:       string(createMessage.UserId),
+			CreatedAt:   createMessage.CreatedAt,
+			IsSent:      createMessage.IsSent,
+			LastAttempt: lastAttemptToDto(createMessage.LastAttempt),
 		})
 	} else {
 		c.JSON(http.StatusBadRequest, err)
 	}
+}
+
+func lastAttemptToDto(attempt domain.Attempt) openapi.SmsEntityResponseLastAttempt {
+	if _, ok := attempt.(domain.SuccessAttempt); ok {
+		return openapi.SmsEntityResponseLastAttempt{
+			Type:         "success",
+			AttemptCount: attempt.AttemptNumber(),
+		}
+	} else if failure, ok := attempt.(domain.FailedAttempt); ok {
+		return openapi.SmsEntityResponseLastAttempt{
+			Type:         "failure",
+			Reason:       failure.Reason,
+			AttemptCount: attempt.AttemptNumber(),
+		}
+	}
+	return openapi.SmsEntityResponseLastAttempt{}
 }
 
 var (

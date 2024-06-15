@@ -40,7 +40,7 @@ func (i FirestoreUserAccountRepository) Save(account domain.UserAccount) (bool, 
 }
 
 func (i FirestoreUserAccountRepository) FindById(accountId domain.AccountID) *domain.UserAccount {
-	if account, err := i.store.Collection(i.collection).Doc(string(accountId)).Get(i.context); err != nil {
+	if account, err := i.store.Collection(i.collection).Doc(string(accountId)).Get(i.context); err == nil {
 		var entity UserAccountJsonEntity
 		if err := account.DataTo(&entity); err == nil {
 			return &domain.UserAccount{

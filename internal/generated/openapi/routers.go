@@ -67,6 +67,8 @@ type ApiHandleFunctions struct {
 	AccountAPI AccountAPI
 	// Routes for the PhoneAPI part of the API
 	PhoneAPI PhoneAPI
+	// Routes for the ReportsAPI part of the API
+	ReportsAPI ReportsAPI
 	// Routes for the SmsAPI part of the API
 	SmsAPI SmsAPI
 	// Routes for the WebhooksAPI part of the API
@@ -104,6 +106,12 @@ func getRoutes(handleFunctions ApiHandleFunctions) []Route {
 			http.MethodPut,
 			"/phones/:phoneId",
 			handleFunctions.PhoneAPI.UpdateFcmToken,
+		},
+		{
+			"ReportMessageStatus",
+			http.MethodPost,
+			"/attempts/",
+			handleFunctions.ReportsAPI.ReportMessageStatus,
 		},
 		{
 			"GetSmsById",

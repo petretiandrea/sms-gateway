@@ -16,14 +16,14 @@ func (h HttpWebhookNotifier) Notify(sms *domain.Sms, webhookUrl string) error {
 	notification := openapi.EventNotificationDto{
 		EventType: openapi.MESSAGE_DELIVERED,
 		Data: openapi.SmsEntityResponse{
-			Id:           string(sms.Id),
-			To:           sms.To,
-			From:         sms.From.Number,
-			Content:      sms.Content,
-			Owner:        string(sms.UserId),
-			CreatedAt:    sms.CreatedAt,
-			IsSent:       sms.IsSent,
-			SendAttempts: int32(sms.SendAttempts),
+			Id:          string(sms.Id),
+			To:          sms.To,
+			From:        sms.From.Number,
+			Content:     sms.Content,
+			Owner:       string(sms.UserId),
+			CreatedAt:   sms.CreatedAt,
+			IsSent:      sms.IsSent,
+			LastAttempt: lastAttemptToDto(sms.LastAttempt),
 		},
 		Metadata: sms.Metadata,
 	}

@@ -330,8 +330,19 @@ components:
           format: uuid
         isSent:
           type: boolean
-        sendAttempts:
-          type: integer
+        lastAttempt:
+          type: object
+          properties:
+            attemptCount:
+              type: integer
+          oneOf:
+            - $ref: '#/components/schemas/SuccessfulAttempt'
+            - $ref: '#/components/schemas/FailedAttempt'
+          discriminator:
+            propertyName: type
+            mapping:
+              success: '#/components/schemas/SuccessfulAttempt'
+              failure: '#/components/schemas/FailedAttempt'
         createdAt:
           type: string
           format: date-time

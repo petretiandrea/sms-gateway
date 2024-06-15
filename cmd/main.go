@@ -93,6 +93,7 @@ func main() {
 	webHookNotifier := userApi.HttpWebhookNotifier{}
 	deliveryNotificationService := application.NewDeliveryNotificationService(deliveryNotificationRepo, smsRepository, webHookNotifier)
 	userAccountService := application.NewUserAccountService(accountRepository)
+	smsService := application.NewSmsService(&smsRepository, application.NewPhoneService(&phoneRepository), pushService)
 
 	listener := infra.NewFirestoreEventListener(ctx, firestoreClient, appConfig.FirebaseConfig.Sms)
 
@@ -101,9 +102,10 @@ func main() {
 	defer deliveryConsumer.Stop()
 
 	server.Use(userApi.NewApiKeyMiddleware(userAccountService, func(request *http.Request) bool {
-		return strings.Contains(request.URL.Path, "/phone") ||
-			strings.Contains(request.URL.Path, "/sms") ||
-			strings.Contains(request.URL.Path, "/webhook")
+		return strings.Contains(request.URL.Path, "/phones") ||
+			strings.Contains(request.URL.Path, "/messages") ||
+			strings.Contains(request.URL.Path, "/webhook") ||
+			strings.Contains(request.URL.Path, "/attempts")
 	}))
 
 	health.RegisterGinHealthCheck(server, firestoreClient)
@@ -118,11 +120,14 @@ func main() {
 		},
 		SmsAPI: userApi.SmsApiController{
 			Account: userAccountService,
-			Sms:     application.NewSmsService(&smsRepository, application.NewPhoneService(&phoneRepository), pushService),
+			Sms:     smsService,
 		},
 		WebhooksAPI: userApi.DeliveryNotificationController{
 			Account:              userAccountService,
 			DeliveryNotification: deliveryNotificationService,
+		},
+		ReportsAPI: userApi.AttemptController{
+			SmsService: smsService,
 		},
 	})
 
