@@ -20,6 +20,7 @@ spec:
       http:
         paths:
           - path: /sms-gateway-v2/(.*)
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: sms-gateway-service-v2
