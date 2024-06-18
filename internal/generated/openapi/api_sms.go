@@ -16,6 +16,10 @@ import (
 
 type SmsAPI interface {
 
+	// GetMessages Get /messages/
+	// Get all filtered sms
+	GetMessages(c *gin.Context)
+
 	// GetSmsById Get /messages/:smsId
 	// Get an sms
 	GetSmsById(c *gin.Context)

@@ -114,8 +114,9 @@ func main() {
 			Account: userAccountService,
 		},
 		SmsAPI: userApi.SmsApiController{
-			Account: userAccountService,
-			Sms:     smsService,
+			Account:           userAccountService,
+			Sms:               smsService,
+			MessageRepository: messageRepository,
 		},
 		WebhooksAPI: userApi.DeliveryNotificationController{
 			Account:              userAccountService,
