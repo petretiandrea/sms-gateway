@@ -19,7 +19,7 @@ spec:
     - host: agenda.beaesthetic.it
       http:
         paths:
-          - path: /sms-gateway-v2/(.*)
+          - path: /sms-gateway/v2/(.*)
             pathType: ImplementationSpecific
             backend:
               service:

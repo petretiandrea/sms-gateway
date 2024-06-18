@@ -28,10 +28,16 @@ type WebhookConfiguration struct {
 	Url string
 }
 
+type QueryParams struct {
+	From   string `form:"from" binding:"omitempty"`
+	IsSent *bool  `form:"isSent" binding:"omitempty"`
+}
+
 type Repository interface {
 	Save(message Sms) (*Sms, error)
 	FindById(id SmsId) *Sms
 	FindExisting(idempotencyKey string) *Sms
+	Find(params QueryParams) ([]Sms, error)
 }
 
 func CreateNewSMS(userId AccountID, from PhoneNumber, to PhoneNumber, content string, idempotencyKey string, metadata map[string]string,

@@ -114,6 +114,12 @@ func getRoutes(handleFunctions ApiHandleFunctions) []Route {
 			handleFunctions.ReportsAPI.ReportMessageStatus,
 		},
 		{
+			"GetMessages",
+			http.MethodGet,
+			"/messages/",
+			handleFunctions.SmsAPI.GetMessages,
+		},
+		{
 			"GetSmsById",
 			http.MethodGet,
 			"/messages/:smsId",

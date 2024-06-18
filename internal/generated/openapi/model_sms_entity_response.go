@@ -15,19 +15,21 @@ import (
 )
 
 type SmsEntityResponse struct {
-	Id string `json:"id,omitempty"`
+	Id string `json:"id"`
 
-	Content string `json:"content,omitempty"`
+	Content string `json:"content"`
 
-	From string `json:"from,omitempty"`
+	From string `json:"from"`
 
-	To string `json:"to,omitempty"`
+	To string `json:"to"`
 
-	Owner string `json:"owner,omitempty"`
+	Owner string `json:"owner"`
 
-	IsSent bool `json:"isSent,omitempty"`
+	IsSent bool `json:"isSent"`
 
 	LastAttempt SmsEntityResponseLastAttempt `json:"lastAttempt,omitempty"`
 
-	CreatedAt time.Time `json:"createdAt,omitempty"`
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
 }

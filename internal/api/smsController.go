@@ -9,8 +9,40 @@ import (
 )
 
 type SmsApiController struct {
-	Account application.UserAccountService
-	Sms     application.SmsService
+	Account           application.UserAccountService
+	Sms               application.SmsService
+	MessageRepository domain.Repository
+}
+
+func (s SmsApiController) GetMessages(c *gin.Context) {
+	var queryParams domain.QueryParams
+	err := c.ShouldBindQuery(&queryParams)
+	if err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	messages, err := s.MessageRepository.Find(queryParams)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err)
+		return
+	}
+	var response []openapi.SmsEntityResponse
+	for _, message := range messages {
+		response = append(response, openapi.SmsEntityResponse{
+			Id:          string(message.Id),
+			To:          message.To,
+			From:        message.From.Number,
+			Content:     message.Content,
+			Owner:       string(message.UserId),
+			CreatedAt:   message.CreatedAt,
+			IsSent:      message.IsSent,
+			LastAttempt: lastAttemptToDto(message.LastAttempt),
+		})
+	}
+	c.JSON(http.StatusOK, openapi.GetMessages200Response{
+		Messages: response,
+	})
+	return
 }
 
 func (s SmsApiController) GetSmsById(c *gin.Context) {

@@ -16,6 +16,33 @@ type MongoMessageRepository struct {
 	collection *mongo.Collection
 }
 
+func (r MongoMessageRepository) Find(params domain.QueryParams) ([]domain.Sms, error) {
+	filter := bson.M{}
+	if params.From != "" {
+		filter["from"] = params.From
+	}
+	if params.IsSent != nil {
+		filter["isSent"] = *params.IsSent
+	}
+	find, err := r.collection.Find(
+		r.context,
+		filter,
+	)
+	if err != nil {
+		return nil, err
+	}
+	var messages []MongoMessageEntity
+	err = find.All(r.context, &messages)
+	if err != nil {
+		return nil, err
+	}
+	var domainMessages []domain.Sms
+	for _, message := range messages {
+		domainMessages = append(domainMessages, *message.ToMessage(message.Id))
+	}
+	return domainMessages, nil
+}
+
 func NewMongoMessageRepository(ctx context.Context, collection *mongo.Collection) MongoMessageRepository {
 	return MongoMessageRepository{context: ctx, collection: collection}
 }
@@ -51,4 +78,6 @@ func (r MongoMessageRepository) FindExisting(idempotencyKey string) *domain.Sms 
 	}
 }
 
-var _ domain.Repository = (*MongoMessageRepository)(nil)
+var (
+	_ domain.Repository = (*MongoMessageRepository)(nil)
+)
