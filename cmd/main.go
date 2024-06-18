@@ -61,15 +61,9 @@ func main() {
 		log.Error("Failed to initialize firebase app")
 		return
 	}
-	firestoreClient, err := app.Firestore(ctx)
-	if err != nil {
-		log.Error("Failed to initialize firestore")
-		return
-	}
-	defer firestoreClient.Close()
 	firebaseMessaging, err := app.Messaging(ctx)
 	if err != nil {
-		log.Error("Failed to initialize firestore")
+		log.Error("Failed to initialize firebase messaging")
 		return
 	}
 	pushService := infra.NewFirebasePushNotification(ctx, firebaseMessaging)
@@ -109,7 +103,7 @@ func main() {
 			strings.Contains(request.URL.Path, "/attempts")
 	}))
 
-	health.RegisterGinHealthCheck(server, firestoreClient)
+	health.RegisterGinHealthCheck(server, mongoClient)
 
 	openapi.NewRouterWithGinEngine(server, openapi.ApiHandleFunctions{
 		AccountAPI: userApi.UserAccountController{
