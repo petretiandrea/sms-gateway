@@ -10,17 +10,9 @@
 
 package openapi
 
-import (
-	"github.com/gin-gonic/gin"
+type EventNotificationType string
+
+// List of EventNotificationType
+const (
+	MESSAGE_DELIVERED EventNotificationType = "message.delivered"
 )
-
-type SmsAPI interface {
-
-	// GetSmsById Get /messages/:smsId
-	// Get an sms
-	GetSmsById(c *gin.Context)
-
-	// SendSms Post /messages/
-	// Send a new sms
-	SendSms(c *gin.Context)
-}

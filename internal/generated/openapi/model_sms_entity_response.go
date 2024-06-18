@@ -27,7 +27,7 @@ type SmsEntityResponse struct {
 
 	IsSent bool `json:"isSent,omitempty"`
 
-	SendAttempts int32 `json:"sendAttempts,omitempty"`
+	LastAttempt SmsEntityResponseLastAttempt `json:"lastAttempt,omitempty"`
 
 	CreatedAt time.Time `json:"createdAt,omitempty"`
 }

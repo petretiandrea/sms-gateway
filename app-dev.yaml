@@ -4,6 +4,7 @@ app:
 
 mongo_connection_string: 'mongodb://localhost:27017'
 mongo_database_name: "smsgateway"
+dry_run: 'true'
 
 firebase:
   credentials_file: 'be-aesthetic-admin-sdk.json'

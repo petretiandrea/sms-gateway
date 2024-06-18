@@ -12,21 +12,21 @@ type UserAccountController struct {
 	CreateUserAccountUseCase application.UserAccountService
 }
 
-func (controller UserAccountController) AccountPost(context *gin.Context) {
+func (controller UserAccountController) RegisterAccount(c *gin.Context) {
 	var createRequest openapi.CreateAccountRequestDto
-	if err := context.BindJSON(&createRequest); err == nil {
+	if err := c.BindJSON(&createRequest); err == nil {
 		accountRequest := application.CreateNewAccountParams{Phone: createRequest.PhoneNumber}
 		if newAccount, err := controller.CreateUserAccountUseCase.CreateNewAccount(accountRequest); err == nil {
-			context.JSONP(http.StatusCreated, openapi.AccountEntityDto{
+			c.JSONP(http.StatusCreated, openapi.AccountEntityDto{
 				AccountId:   string(newAccount.Id),
 				PhoneNumber: newAccount.Phone,
 				ApiKey:      string(newAccount.ApiKey),
 			})
 		} else {
-			context.JSON(http.StatusBadRequest, err)
+			c.JSON(http.StatusBadRequest, err)
 		}
 	} else {
-		context.JSON(http.StatusBadRequest, err)
+		c.JSON(http.StatusBadRequest, err)
 	}
 	return
 }

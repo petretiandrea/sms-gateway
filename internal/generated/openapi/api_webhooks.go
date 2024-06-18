@@ -16,10 +16,7 @@ import (
 
 type WebhooksAPI interface {
 
-	// WebhookDisablePut Put /webhook/disable
-	WebhookDisablePut(c *gin.Context)
-
-	// WebhookEnablePut Put /webhook/enable
+	// WebhooksPost Post /webhooks/
 	// Enable webhook delivery
-	WebhookEnablePut(c *gin.Context)
+	WebhooksPost(c *gin.Context)
 }

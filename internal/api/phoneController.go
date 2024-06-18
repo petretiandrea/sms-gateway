@@ -13,6 +13,24 @@ type PhoneApiController struct {
 	Account application.UserAccountService
 }
 
+func (p PhoneApiController) RegisterPhone(c *gin.Context) {
+	var sendRequest openapi.RegisterPhoneRequestDto
+	user := c.MustGet("user").(domain.UserAccount)
+	if err := c.BindJSON(&sendRequest); err != nil {
+		c.JSON(http.StatusBadRequest, err)
+		return
+	}
+
+	if device, err := p.Phone.RegisterPhone(
+		domain.PhoneNumber{Number: sendRequest.Phone},
+		user.Id,
+	); err == nil {
+		c.JSONP(http.StatusCreated, device.Id)
+	} else {
+		c.JSON(http.StatusBadRequest, err)
+	}
+}
+
 func (p PhoneApiController) GetPhoneById(c *gin.Context) {
 	phoneId := c.Param("phoneId")
 	if device, err := p.Phone.GetPhoneById(domain.PhoneId(phoneId)); device != nil {
@@ -30,24 +48,6 @@ func (p PhoneApiController) GetPhoneById(c *gin.Context) {
 		} else {
 			c.JSON(http.StatusBadRequest, err)
 		}
-	}
-}
-
-func (p PhoneApiController) PhonePost(context *gin.Context) {
-	var sendRequest openapi.RegisterPhoneRequestDto
-	user := context.MustGet("user").(domain.UserAccount)
-	if err := context.BindJSON(&sendRequest); err != nil {
-		context.JSON(http.StatusBadRequest, err)
-		return
-	}
-
-	if device, err := p.Phone.RegisterPhone(
-		domain.PhoneNumber{Number: sendRequest.Phone},
-		user.Id,
-	); err == nil {
-		context.JSONP(http.StatusCreated, device.Id)
-	} else {
-		context.JSON(http.StatusBadRequest, err)
 	}
 }
 

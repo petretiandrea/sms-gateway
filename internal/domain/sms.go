@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"github.com/pkg/errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -15,10 +16,16 @@ type Sms struct {
 	Content        string
 	UserId         AccountID
 	IsSent         bool
-	SendAttempts   int
+	LastAttempt    Attempt
 	CreatedAt      time.Time
 	LastUpdateAt   time.Time
 	IdempotencyKey string
+	Configuration  WebhookConfiguration
+	Metadata       map[string]string
+}
+
+type WebhookConfiguration struct {
+	Url string
 }
 
 type Repository interface {
@@ -27,7 +34,8 @@ type Repository interface {
 	FindExisting(idempotencyKey string) *Sms
 }
 
-func CreateNewSMS(userId AccountID, from PhoneNumber, to PhoneNumber, content string, idempotencyKey string) Sms {
+func CreateNewSMS(userId AccountID, from PhoneNumber, to PhoneNumber, content string, idempotencyKey string, metadata map[string]string,
+	configuration WebhookConfiguration) Sms {
 	return Sms{
 		Id:             SmsId(uuid.NewString()),
 		UserId:         userId,
@@ -35,8 +43,33 @@ func CreateNewSMS(userId AccountID, from PhoneNumber, to PhoneNumber, content st
 		To:             to.Number,
 		Content:        content,
 		IsSent:         false,
-		SendAttempts:   0,
+		LastAttempt:    nil,
 		CreatedAt:      time.Now(),
 		IdempotencyKey: idempotencyKey,
+		Metadata:       metadata,
+		Configuration:  configuration,
 	}
 }
+
+func (sms *Sms) RegisterAttempt(attempt Attempt) {
+	var lastAttemptCount int32
+	if sms.LastAttempt == nil {
+		lastAttemptCount = 0
+	} else {
+		lastAttemptCount = sms.LastAttempt.AttemptNumber()
+	}
+
+	if lastAttemptCount < attempt.AttemptNumber() {
+		if failure, ok := attempt.(FailedAttempt); ok {
+			sms.LastAttempt = failure
+			sms.IsSent = false
+		} else if success, ok := attempt.(SuccessAttempt); ok {
+			sms.LastAttempt = success
+			sms.IsSent = true
+		}
+	}
+}
+
+var (
+	ErrorNotMessageOwner = errors.New("Different message owner")
+)

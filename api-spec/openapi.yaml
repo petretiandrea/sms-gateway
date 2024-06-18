@@ -13,11 +13,12 @@ servers:
   - url: https://localhost:8080/
 paths:
   
-  /phone/:
+  /phones/:
     post:
       tags:
         - phone
       summary: "Register new phone"
+      operationId: registerPhone
       security:
         - ApiKeyAuth: [ ]
       requestBody:
@@ -36,7 +37,7 @@ paths:
                 description: "Phone ID"
         '400':
           description: "Invalid request"
-  /phone/{phoneId}:
+  /phones/{phoneId}:
     put:
       tags:
         - phone
@@ -90,11 +91,12 @@ paths:
         '404':
           description: "Phone not found"
 
-  /account/:
+  /accounts/:
     post:
       tags:
         - account
       summary: "Register new account"
+      operationId: registerAccount
       requestBody:
         content:
           application/json:
@@ -109,7 +111,7 @@ paths:
                 $ref: "#/components/schemas/AccountEntityDto"
         '400':
           description: "Invalid request"
-  /account/{accountId}:
+  /accounts/{accountId}:
     get:
       tags:
         - account
@@ -135,7 +137,7 @@ paths:
         '404':
           description: "Account not found"
 
-  /sms/{smsId}:
+  /messages/{smsId}:
     get:
       tags:
         - sms
@@ -157,7 +159,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SmsEntityResponse"
-  /sms/:
+  /messages/:
     post:
       tags:
         - sms
@@ -175,6 +177,20 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/SendSmsRequest"
+      callbacks:
+        messageCallback:
+          '/callbackUrl':
+            post:
+              operationId: notifyMessageDelivery
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/EventNotificationDto'
+              responses:
+                200:
+                  description: "Callback accepted"
       responses:
         "201":
           description: "Send sms takes"
@@ -185,8 +201,8 @@ paths:
         '400':
           description: "Invalid request"
 
-  /webhook/enable:
-    put:
+  /webhooks/:
+    post:
       tags:
         - webhooks
       summary: Enable webhook delivery
@@ -196,7 +212,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EnableWebhookRequest'
+              $ref: '#/components/schemas/CreateWebhookRequest'
       responses:
         "200":
           description: "Webhook registered"
@@ -206,27 +222,67 @@ paths:
                 $ref: '#/components/schemas/WebhookEntityResponse'
         "400":
           description: "Bad request"
-  /webhook/disable:
-    put:
+
+  /attempts/:
+    post:
       tags:
-        - webhooks
-      description: Disable webhook delivery
+        - reports
+      operationId: reportMessageStatus
       security:
         - ApiKeyAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendAttempt'
       responses:
-        200:
-          description: "Successfully disabled webhook"
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/WebhookEntityResponse'
-        400:
-          description: "Bad request"
-        404:
-          description: "Webhook not found"
+        "202":
+          description: "Attempt registered"
+        "400":
+          description: "Invalid request"
+        "500":
+          description: "Internal error"
 
 components:
   schemas:
+    SendAttempt:
+      type: object
+      properties:
+        messageId:
+          type: string
+          format: uuid
+        phoneId:
+          type: string
+          format: uuid
+        attempt:
+          description: "Number of attempt"
+          type: integer
+        result:
+          oneOf:
+            - $ref: '#/components/schemas/SuccessfulAttempt'
+            - $ref: '#/components/schemas/FailedAttempt'
+          discriminator:
+            propertyName: type
+            mapping:
+              success: '#/components/schemas/SuccessfulAttempt'
+              failure: '#/components/schemas/FailedAttempt'
+    FailedAttempt:
+      type: object
+      properties:
+        type:
+          type: string
+          format: "failure"
+        reason:
+          type: string
+          description: "Reason of failure attempt"
+    SuccessfulAttempt:
+      type: object
+      properties:
+        type:
+          type: string
+          pattern: "success"
+
     WebhookEntityResponse:
       type: object
       properties:
@@ -234,13 +290,29 @@ components:
           type: string
         enabled:
           type: boolean
-    EnableWebhookRequest:
+    CreateWebhookRequest:
       type: object
       properties:
-        webhookURL:
+        defaultWebhookUrl:
           type: string
+        enabled:
+          type: boolean
       required:
         - webhookURL
+        - enabled
+    EventNotificationType:
+      type: string
+      enum:
+        - message.delivered
+    EventNotificationDto:
+      type: object
+      properties:
+        eventType:
+          $ref: '#/components/schemas/EventNotificationType'
+        data:
+          $ref: '#/components/schemas/SmsEntityResponse'
+        metadata:
+          $ref: '#/components/schemas/AdditionalMetadata'
     SmsEntityResponse:
       type: object
       properties:
@@ -258,8 +330,19 @@ components:
           format: uuid
         isSent:
           type: boolean
-        sendAttempts:
-          type: integer
+        lastAttempt:
+          type: object
+          properties:
+            attemptCount:
+              type: integer
+          oneOf:
+            - $ref: '#/components/schemas/SuccessfulAttempt'
+            - $ref: '#/components/schemas/FailedAttempt'
+          discriminator:
+            propertyName: type
+            mapping:
+              success: '#/components/schemas/SuccessfulAttempt'
+              failure: '#/components/schemas/FailedAttempt'
         createdAt:
           type: string
           format: date-time
@@ -272,10 +355,23 @@ components:
           type: string
         to:
           type: string
+        webhook:
+          $ref: '#/components/schemas/WebhookOnDemandConfig'
+        metadata:
+          $ref: '#/components/schemas/AdditionalMetadata'
       required:
         - content
         - from
         - to
+    WebhookOnDemandConfig:
+      type: object
+      properties:
+        url:
+          type: string
+    AdditionalMetadata:
+      type: object
+      additionalProperties:
+        type: string
     RegisterPhoneRequestDto:
       type: object
       properties:

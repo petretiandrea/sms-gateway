@@ -67,6 +67,8 @@ type ApiHandleFunctions struct {
 	AccountAPI AccountAPI
 	// Routes for the PhoneAPI part of the API
 	PhoneAPI PhoneAPI
+	// Routes for the ReportsAPI part of the API
+	ReportsAPI ReportsAPI
 	// Routes for the SmsAPI part of the API
 	SmsAPI SmsAPI
 	// Routes for the WebhooksAPI part of the API
@@ -76,58 +78,58 @@ type ApiHandleFunctions struct {
 func getRoutes(handleFunctions ApiHandleFunctions) []Route {
 	return []Route{
 		{
-			"AccountPost",
-			http.MethodPost,
-			"/account/",
-			handleFunctions.AccountAPI.AccountPost,
-		},
-		{
 			"GetAccountById",
 			http.MethodGet,
-			"/account/:accountId",
+			"/accounts/:accountId",
 			handleFunctions.AccountAPI.GetAccountById,
+		},
+		{
+			"RegisterAccount",
+			http.MethodPost,
+			"/accounts/",
+			handleFunctions.AccountAPI.RegisterAccount,
 		},
 		{
 			"GetPhoneById",
 			http.MethodGet,
-			"/phone/:phoneId",
+			"/phones/:phoneId",
 			handleFunctions.PhoneAPI.GetPhoneById,
 		},
 		{
-			"PhonePost",
+			"RegisterPhone",
 			http.MethodPost,
-			"/phone/",
-			handleFunctions.PhoneAPI.PhonePost,
+			"/phones/",
+			handleFunctions.PhoneAPI.RegisterPhone,
 		},
 		{
 			"UpdateFcmToken",
 			http.MethodPut,
-			"/phone/:phoneId",
+			"/phones/:phoneId",
 			handleFunctions.PhoneAPI.UpdateFcmToken,
+		},
+		{
+			"ReportMessageStatus",
+			http.MethodPost,
+			"/attempts/",
+			handleFunctions.ReportsAPI.ReportMessageStatus,
 		},
 		{
 			"GetSmsById",
 			http.MethodGet,
-			"/sms/:smsId",
+			"/messages/:smsId",
 			handleFunctions.SmsAPI.GetSmsById,
 		},
 		{
 			"SendSms",
 			http.MethodPost,
-			"/sms/",
+			"/messages/",
 			handleFunctions.SmsAPI.SendSms,
 		},
 		{
-			"WebhookDisablePut",
-			http.MethodPut,
-			"/webhook/disable",
-			handleFunctions.WebhooksAPI.WebhookDisablePut,
-		},
-		{
-			"WebhookEnablePut",
-			http.MethodPut,
-			"/webhook/enable",
-			handleFunctions.WebhooksAPI.WebhookEnablePut,
+			"WebhooksPost",
+			http.MethodPost,
+			"/webhooks/",
+			handleFunctions.WebhooksAPI.WebhooksPost,
 		},
 	}
 }

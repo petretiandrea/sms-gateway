@@ -14,15 +14,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type PhoneAPI interface {
+type ReportsAPI interface {
 
-	// GetPhoneById Get /phones/:phoneId
-	GetPhoneById(c *gin.Context)
-
-	// RegisterPhone Post /phones/
-	// Register new phone
-	RegisterPhone(c *gin.Context)
-
-	// UpdateFcmToken Put /phones/:phoneId
-	UpdateFcmToken(c *gin.Context)
+	// ReportMessageStatus Post /attempts/
+	ReportMessageStatus(c *gin.Context)
 }

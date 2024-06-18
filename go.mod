@@ -3,13 +3,13 @@ module sms-gateway
 go 1.22.3
 
 require (
-	cloud.google.com/go/firestore v1.14.0
 	firebase.google.com/go v3.13.0+incompatible
 	github.com/alexliesenfeld/health v0.7.0
 	github.com/gin-contrib/zap v0.1.0
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/uuid v1.6.0
 	github.com/kelseyhightower/envconfig v1.4.0
+	github.com/pkg/errors v0.8.1
 	go.mongodb.org/mongo-driver v1.15.0
 	go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin v0.52.0
 	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.52.0
@@ -24,6 +24,7 @@ require (
 require (
 	cloud.google.com/go v0.112.1 // indirect
 	cloud.google.com/go/compute/metadata v0.3.0 // indirect
+	cloud.google.com/go/firestore v1.14.0 // indirect
 	cloud.google.com/go/iam v1.1.6 // indirect
 	cloud.google.com/go/longrunning v0.5.5 // indirect
 	cloud.google.com/go/storage v1.38.0 // indirect

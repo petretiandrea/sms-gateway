@@ -10,17 +10,10 @@
 
 package openapi
 
-import (
-	"github.com/gin-gonic/gin"
-)
+type EventNotificationDto struct {
+	EventType EventNotificationType `json:"eventType,omitempty"`
 
-type SmsAPI interface {
+	Data SmsEntityResponse `json:"data,omitempty"`
 
-	// GetSmsById Get /messages/:smsId
-	// Get an sms
-	GetSmsById(c *gin.Context)
-
-	// SendSms Post /messages/
-	// Send a new sms
-	SendSms(c *gin.Context)
+	Metadata map[string]string `json:"metadata,omitempty"`
 }

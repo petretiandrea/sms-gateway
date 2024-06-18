@@ -16,10 +16,10 @@ import (
 
 type AccountAPI interface {
 
-	// AccountPost Post /account/
-	// Register new account
-	AccountPost(c *gin.Context)
-
-	// GetAccountById Get /account/:accountId
+	// GetAccountById Get /accounts/:accountId
 	GetAccountById(c *gin.Context)
+
+	// RegisterAccount Post /accounts/
+	// Register new account
+	RegisterAccount(c *gin.Context)
 }

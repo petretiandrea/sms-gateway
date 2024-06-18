@@ -13,30 +13,16 @@ type DeliveryNotificationController struct {
 	DeliveryNotification application.DeliveryNotificationService
 }
 
-func (d DeliveryNotificationController) WebhookDisablePut(c *gin.Context) {
-	user := c.MustGet("user").(domain.UserAccount)
-	if config := d.DeliveryNotification.DisableDeliveryNotification(
-		user.Id,
-	); config == nil {
-		c.JSON(http.StatusNotFound, "Configuration not found")
-	} else {
-		c.JSONP(http.StatusOK, openapi.WebhookEntityResponse{
-			WebhookURL: config.WebhookURL,
-			Enabled:    config.Enabled,
-		})
-	}
-}
-
-func (d DeliveryNotificationController) WebhookEnablePut(c *gin.Context) {
-	var request openapi.EnableWebhookRequest
+func (d DeliveryNotificationController) WebhooksPost(c *gin.Context) {
+	var request openapi.CreateWebhookRequest
 	user := c.MustGet("user").(domain.UserAccount)
 	if err := c.BindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, err)
 		return
 	}
 	configToUpdate := domain.DeliveryNotificationConfig{
-		WebhookURL: request.WebhookURL,
-		Enabled:    true,
+		WebhookURL: request.DefaultWebhookUrl,
+		Enabled:    request.Enabled,
 		AccountId:  user.Id,
 	}
 	if config, err := d.DeliveryNotification.UpdateDeliveryConfig(configToUpdate); err == nil {

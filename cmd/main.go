@@ -17,7 +17,8 @@ import (
 	"sms-gateway/internal/generated/openapi"
 	"sms-gateway/internal/health"
 	"sms-gateway/internal/infra"
-	"sms-gateway/internal/infra/repos"
+	"sms-gateway/internal/infra/changes"
+	"sms-gateway/internal/infra/repos/mongo"
 	"strconv"
 	"strings"
 	"time"
@@ -60,15 +61,9 @@ func main() {
 		log.Error("Failed to initialize firebase app")
 		return
 	}
-	firestoreClient, err := app.Firestore(ctx)
-	if err != nil {
-		log.Error("Failed to initialize firestore")
-		return
-	}
-	defer firestoreClient.Close()
 	firebaseMessaging, err := app.Messaging(ctx)
 	if err != nil {
-		log.Error("Failed to initialize firestore")
+		log.Error("Failed to initialize firebase messaging")
 		return
 	}
 	pushService := infra.NewFirebasePushNotification(ctx, firebaseMessaging)
@@ -83,30 +78,32 @@ func main() {
 		log.Error("Failed to initialize mongodb")
 		return
 	}
+	mongoDatabase := mongoClient.Database(appConfig.MongoDatabaseName)
 
 	// user account example
-	accountRepository := repos.NewFirestoreUserAccountRepository(ctx, firestoreClient, appConfig.FirebaseConfig.UserAccount)
-	smsRepository := repos.NewMessageFirestoreRepository(ctx, firestoreClient, appConfig.FirebaseConfig.Sms)
-	phoneRepository := repos.NewFirestorePhoneRepository(ctx, firestoreClient, appConfig.FirebaseConfig.Phone)
-	deliveryNotificationRepo := repos.NewMongoDeliveryNotificationRepository(mongoContext, mongoClient, appConfig.MongoDatabaseName)
+	accountRepository := mongo.NewMongoUserAccountRepository(ctx, mongoDatabase.Collection("accounts"))
+	messageRepository := mongo.NewMongoMessageRepository(ctx, mongoDatabase.Collection("messages"))
+	phoneRepository := mongo.NewMongoPhoneRepository(ctx, mongoDatabase.Collection("phones"))
+	deliveryNotificationRepo := mongo.NewMongoDeliveryNotificationRepository(mongoContext, mongoDatabase.Collection("deliveryconfigs"))
 
+	changeFeedProducer := changes.NewMessageChangeFeedProducer()
 	webHookNotifier := userApi.HttpWebhookNotifier{}
-	deliveryNotificationService := application.NewDeliveryNotificationService(deliveryNotificationRepo, smsRepository, webHookNotifier)
+	deliveryNotificationService := application.NewDeliveryNotificationService(deliveryNotificationRepo, messageRepository, webHookNotifier)
 	userAccountService := application.NewUserAccountService(accountRepository)
+	smsService := application.NewSmsService(&messageRepository, application.NewPhoneService(&phoneRepository), pushService, changeFeedProducer)
 
-	listener := infra.NewFirestoreEventListener(ctx, firestoreClient, appConfig.FirebaseConfig.Sms)
-
-	deliveryConsumer := events.NewDeliveryNotificationConsumer(listener, deliveryNotificationService)
+	deliveryConsumer := events.NewDeliveryNotificationConsumer(changeFeedProducer, deliveryNotificationService)
 	go deliveryConsumer.Start()
 	defer deliveryConsumer.Stop()
 
 	server.Use(userApi.NewApiKeyMiddleware(userAccountService, func(request *http.Request) bool {
-		return strings.Contains(request.URL.Path, "/phone") ||
-			strings.Contains(request.URL.Path, "/sms") ||
-			strings.Contains(request.URL.Path, "/webhook")
+		return strings.Contains(request.URL.Path, "/phones") ||
+			strings.Contains(request.URL.Path, "/messages") ||
+			strings.Contains(request.URL.Path, "/webhook") ||
+			strings.Contains(request.URL.Path, "/attempts")
 	}))
 
-	health.RegisterGinHealthCheck(server, firestoreClient)
+	health.RegisterGinHealthCheck(server, mongoClient)
 
 	openapi.NewRouterWithGinEngine(server, openapi.ApiHandleFunctions{
 		AccountAPI: userApi.UserAccountController{
@@ -118,11 +115,14 @@ func main() {
 		},
 		SmsAPI: userApi.SmsApiController{
 			Account: userAccountService,
-			Sms:     application.NewSmsService(&smsRepository, application.NewPhoneService(&phoneRepository), pushService),
+			Sms:     smsService,
 		},
 		WebhooksAPI: userApi.DeliveryNotificationController{
 			Account:              userAccountService,
 			DeliveryNotification: deliveryNotificationService,
+		},
+		ReportsAPI: userApi.AttemptController{
+			SmsService: smsService,
 		},
 	})
 

@@ -10,6 +10,6 @@
 
 package openapi
 
-type EnableWebhookRequest struct {
-	WebhookURL string `json:"webhookURL"`
+type SuccessfulAttempt struct {
+	Type string `json:"type,omitempty"`
 }

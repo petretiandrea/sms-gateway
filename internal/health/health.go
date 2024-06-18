@@ -1,16 +1,17 @@
 package health
 
 import (
-	"cloud.google.com/go/firestore"
+	"context"
 	"github.com/alexliesenfeld/health"
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/mongo"
 	"net/http"
 	"strings"
 	"time"
 )
 
-func RegisterGinHealthCheck(gin *gin.Engine, client *firestore.Client) {
-	gin.GET("/health", healthCheckHandler(createHealthCheck(client)))
+func RegisterGinHealthCheck(gin *gin.Engine, mongo *mongo.Client) {
+	gin.GET("/health", healthCheckHandler(createHealthCheck(mongo)))
 }
 
 func FilterHealthCheck(request *http.Request) bool {
@@ -28,14 +29,15 @@ func healthCheckHandler(healthCheck health.Checker) func(ctx *gin.Context) {
 	}
 }
 
-func createHealthCheck(client *firestore.Client) health.Checker {
-	firebaseHealth := NewFirebaseHealth(client)
+func createHealthCheck(mongo *mongo.Client) health.Checker {
 	checker := health.NewChecker(
 		health.WithCacheDuration(5*time.Minute),
 		health.WithCheck(health.Check{
-			Name:    "firebase",
+			Name:    "mongo",
 			Timeout: 2 * time.Second,
-			Check:   firebaseHealth.Check,
+			Check: func(ctx context.Context) error {
+				return mongo.Ping(ctx, nil)
+			},
 		}),
 	)
 

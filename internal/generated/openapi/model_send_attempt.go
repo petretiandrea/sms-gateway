@@ -10,17 +10,13 @@
 
 package openapi
 
-import (
-	"github.com/gin-gonic/gin"
-)
+type SendAttempt struct {
+	MessageId string `json:"messageId,omitempty"`
 
-type SmsAPI interface {
+	PhoneId string `json:"phoneId,omitempty"`
 
-	// GetSmsById Get /messages/:smsId
-	// Get an sms
-	GetSmsById(c *gin.Context)
+	// Number of attempt
+	Attempt int32 `json:"attempt,omitempty"`
 
-	// SendSms Post /messages/
-	// Send a new sms
-	SendSms(c *gin.Context)
+	Result SendAttemptResult `json:"result,omitempty"`
 }
