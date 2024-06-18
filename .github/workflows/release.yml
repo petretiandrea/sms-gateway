@@ -61,7 +61,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: petretiandrea/sms-gateway-service
+          images: petretiandrea/sms-gateway-service-v2
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}},value=${{ steps.semantic.outputs.new_release_version }}
@@ -100,6 +100,6 @@ jobs:
     name: "Deploy to K8s"
     uses: ./.github/workflows/k8s-deploy-helm.yml
     with:
-      microservice-name: sms-gateway-service
-      helm-path: "./helm/"
+      microservice-name: sms-gateway-service-v2
+      helm-path: "./helm-v2/"
       image-tag: "${{ needs.build.outputs.tag_deploy }}"

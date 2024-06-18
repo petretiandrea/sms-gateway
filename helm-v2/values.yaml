@@ -1,0 +1,65 @@
+namespace: "beaesthetic"
+name: "sms-gateway-service-v2"
+labels:
+  app: "sms-gateway-api-v2"
+
+replicaCount: 1
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+image:
+  repository: petretiandrea/sms-gateway-service-v2
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+service:
+  create: true
+  type: ClusterIP
+  ports:
+    - 8080
+
+envConfig:
+  FIREBASECONFIG_CREDENTIALSFILE: /be-aesthetic-admin-sdk.json
+  FIREBASECONFIG_SMS: sms
+  FIREBASECONFIG_USERACCOUNT: user-account
+  FIREBASECONFIG_PHONE: phone
+  DRYRUN: "false"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://opentelemetry-collector.monitoring.svc.cluster.local:4317"
+  OTEL_EXPORTER_OTLP_INSECURE: "true"
+  OTEL_EXPORTER_OTLP_COMPRESSION: "gzip"
+
+secretKeyRef:
+  - name: 'MONGOCONNECTIONSTRING'
+    secretRefName: 'sms-gateway'
+    key: 'MONGO_CONNECTION_STRING'
+  - name: 'MONGODATABASENAME'
+    secretRefName: 'sms-gateway'
+    key: 'MONGO_DATABASE_NAME'
+
+secretFiles:
+  - name: "firebase-admin-config"
+    mountPath: "/be-aesthetic-admin-sdk.json"
+    subPath: "firebase-admin.json"
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 10
+  failureThreshold: 10
+  periodSeconds: 30
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 10
+  failureThreshold: 10
+  periodSeconds: 30
+
+# TODO: add ingress zone
+

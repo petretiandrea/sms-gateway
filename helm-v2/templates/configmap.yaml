@@ -1,0 +1,16 @@
+{{- if or .Values.envConfig .Values.configMapFromFile -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- tpl (toYaml .Values.labels) . | nindent 4 }}
+data:
+  {{- if .Values.envConfig -}}
+  {{- toYaml .Values.envConfig | nindent 2 }}
+  {{- end }}
+  {{- if .Values.configMapFromFile -}}
+  {{- toYaml .Values.configMapFromFile | nindent 2 }}
+  {{- end }}
+  {{- end }}
