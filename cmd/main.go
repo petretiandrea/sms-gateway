@@ -17,7 +17,8 @@ import (
 	"sms-gateway/internal/generated/openapi"
 	"sms-gateway/internal/health"
 	"sms-gateway/internal/infra"
-	"sms-gateway/internal/infra/repos"
+	"sms-gateway/internal/infra/changes"
+	"sms-gateway/internal/infra/repos/mongo"
 	"strconv"
 	"strings"
 	"time"
@@ -83,21 +84,21 @@ func main() {
 		log.Error("Failed to initialize mongodb")
 		return
 	}
+	mongoDatabase := mongoClient.Database(appConfig.MongoDatabaseName)
 
 	// user account example
-	accountRepository := repos.NewFirestoreUserAccountRepository(ctx, firestoreClient, appConfig.FirebaseConfig.UserAccount)
-	smsRepository := repos.NewMessageFirestoreRepository(ctx, firestoreClient, appConfig.FirebaseConfig.Sms)
-	phoneRepository := repos.NewFirestorePhoneRepository(ctx, firestoreClient, appConfig.FirebaseConfig.Phone)
-	deliveryNotificationRepo := repos.NewMongoDeliveryNotificationRepository(mongoContext, mongoClient, appConfig.MongoDatabaseName)
+	accountRepository := mongo.NewMongoUserAccountRepository(ctx, mongoDatabase.Collection("accounts"))
+	messageRepository := mongo.NewMongoMessageRepository(ctx, mongoDatabase.Collection("messages"))
+	phoneRepository := mongo.NewMongoPhoneRepository(ctx, mongoDatabase.Collection("phones"))
+	deliveryNotificationRepo := mongo.NewMongoDeliveryNotificationRepository(mongoContext, mongoDatabase.Collection("deliveryconfigs"))
 
+	changeFeedProducer := changes.NewMessageChangeFeedProducer()
 	webHookNotifier := userApi.HttpWebhookNotifier{}
-	deliveryNotificationService := application.NewDeliveryNotificationService(deliveryNotificationRepo, smsRepository, webHookNotifier)
+	deliveryNotificationService := application.NewDeliveryNotificationService(deliveryNotificationRepo, messageRepository, webHookNotifier)
 	userAccountService := application.NewUserAccountService(accountRepository)
-	smsService := application.NewSmsService(&smsRepository, application.NewPhoneService(&phoneRepository), pushService)
+	smsService := application.NewSmsService(&messageRepository, application.NewPhoneService(&phoneRepository), pushService, changeFeedProducer)
 
-	listener := infra.NewFirestoreEventListener(ctx, firestoreClient, appConfig.FirebaseConfig.Sms)
-
-	deliveryConsumer := events.NewDeliveryNotificationConsumer(listener, deliveryNotificationService)
+	deliveryConsumer := events.NewDeliveryNotificationConsumer(changeFeedProducer, deliveryNotificationService)
 	go deliveryConsumer.Start()
 	defer deliveryConsumer.Stop()
 

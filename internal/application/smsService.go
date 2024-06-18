@@ -7,9 +7,10 @@ import (
 )
 
 type SmsService struct {
-	phone        PhoneService
-	repo         domain.Repository
-	notification infra.FirebasePushNotification
+	phone                 PhoneService
+	repo                  domain.Repository
+	notification          infra.FirebasePushNotification
+	messageFeedController domain.MessageChangeFeedController
 }
 
 type CreateMessageCommand struct {
@@ -22,8 +23,13 @@ type CreateMessageCommand struct {
 	Metadata       map[string]string
 }
 
-func NewSmsService(repo domain.Repository, phoneService PhoneService, pushService infra.FirebasePushNotification) SmsService {
-	return SmsService{repo: repo, phone: phoneService, notification: pushService}
+func NewSmsService(
+	repo domain.Repository,
+	phoneService PhoneService,
+	pushService infra.FirebasePushNotification,
+	messageFeedController domain.MessageChangeFeedController,
+) SmsService {
+	return SmsService{repo: repo, phone: phoneService, notification: pushService, messageFeedController: messageFeedController}
 }
 
 func (service *SmsService) SendSMS(params CreateMessageCommand) (*domain.Sms, error) {
@@ -46,11 +52,14 @@ func (service *SmsService) SendSMS(params CreateMessageCommand) (*domain.Sms, er
 			metadata,
 			domain.WebhookConfiguration{Url: params.WebhookUrl},
 		)
-		_, err := service.repo.Save(message)
+		phoneAccount, err := service.phone.GetPhoneByNumber(message.From)
 		if err != nil {
 			return nil, err
 		}
-		phoneAccount, err := service.phone.GetPhoneByNumber(message.From)
+		if phoneAccount == nil {
+			return nil, nil
+		}
+		_, err = service.repo.Save(message)
 		if err != nil {
 			return nil, err
 		}
@@ -76,7 +85,13 @@ func (service *SmsService) RegisterAttempt(
 	}
 	if sms.UserId == accountID {
 		sms.RegisterAttempt(attempt)
-		return service.repo.Save(*sms)
+		save, err := service.repo.Save(*sms)
+		if err != nil {
+			return nil, err
+		} else {
+			service.messageFeedController.Add(*save)
+			return save, nil
+		}
 	} else {
 		return nil, errors.Wrapf(
 			domain.ErrorNotMessageOwner,

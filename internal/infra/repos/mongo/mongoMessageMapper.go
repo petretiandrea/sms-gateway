@@ -1,32 +1,34 @@
-package repos
+package mongo
 
 import (
 	"sms-gateway/internal/domain"
 	"time"
 )
 
-type MessageFirestoreEntity struct {
-	From           string            `firestore:"from"`
-	To             string            `firestore:"to"`
-	Content        string            `firestore:"content"`
-	IsSent         bool              `firestore:"isSent"`
-	LastAttempt    AttemptDocument   `firestore:"lastAttempt"`
-	Owner          string            `firestore:"owner"`
-	IdempotencyKey string            `firestore:"idempotencyKey"`
-	CreatedAt      time.Time         `firestore:"createdAt"`
-	UpdatedAt      time.Time         `firestore:"updatedAt"`
-	Metadata       map[string]string `firestore:"additionalData"`
+type MongoMessageEntity struct {
+	Id             string            `bson:"_id"`
+	From           string            `bson:"from"`
+	To             string            `bson:"to"`
+	Content        string            `bson:"content"`
+	IsSent         bool              `bson:"isSent"`
+	LastAttempt    AttemptDocument   `bson:"lastAttempt"`
+	Owner          string            `bson:"owner"`
+	IdempotencyKey string            `bson:"idempotencyKey"`
+	CreatedAt      time.Time         `bson:"createdAt"`
+	UpdatedAt      time.Time         `bson:"updatedAt"`
+	Metadata       map[string]string `bson:"additionalData"`
 }
 
 type AttemptDocument struct {
-	Type          string `firestore:"type"`
-	PhoneId       string `firestore:"phoneId"`
-	AttemptCount  int32  `firestore:"attemptCount"`
-	FailureReason string `firestore:"failureReason"`
+	Type          string `bson:"type"`
+	PhoneId       string `bson:"phoneId"`
+	AttemptCount  int32  `bson:"attemptCount"`
+	FailureReason string `bson:"failureReason"`
 }
 
-func smsMapToEntity(message domain.Sms) MessageFirestoreEntity {
-	return MessageFirestoreEntity{
+func smsMapToEntity(message domain.Sms) MongoMessageEntity {
+	return MongoMessageEntity{
+		Id:             string(message.Id),
 		From:           message.From.Number,
 		To:             message.To,
 		Content:        message.Content,
@@ -40,7 +42,7 @@ func smsMapToEntity(message domain.Sms) MessageFirestoreEntity {
 	}
 }
 
-func (entity *MessageFirestoreEntity) ToMessage(id string) *domain.Sms {
+func (entity *MongoMessageEntity) ToMessage(id string) *domain.Sms {
 	return &domain.Sms{
 		Id:             domain.SmsId(id),
 		From:           domain.PhoneNumber{Number: entity.From},

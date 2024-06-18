@@ -1,4 +1,4 @@
-package repos
+package mongo
 
 import (
 	"context"
@@ -10,16 +10,14 @@ import (
 )
 
 type MongoDeliveryNotificationRepository struct {
-	ctx   context.Context
-	mongo *mongo.Collection
+	ctx        context.Context
+	collection *mongo.Collection
 }
 
-const collectionName = "deliveryconfigs"
-
-func NewMongoDeliveryNotificationRepository(ctx context.Context, mongo *mongo.Client, databaseName string) MongoDeliveryNotificationRepository {
+func NewMongoDeliveryNotificationRepository(ctx context.Context, collection *mongo.Collection) MongoDeliveryNotificationRepository {
 	return MongoDeliveryNotificationRepository{
-		ctx:   ctx,
-		mongo: mongo.Database(databaseName).Collection(collectionName),
+		ctx:        ctx,
+		collection: collection,
 	}
 }
 
@@ -29,7 +27,7 @@ func (m MongoDeliveryNotificationRepository) Save(config domain.DeliveryNotifica
 		Enabled:    config.Enabled,
 		WebhookURL: config.WebhookURL,
 	}
-	if _, err := m.mongo.UpdateByID(
+	if _, err := m.collection.UpdateByID(
 		m.ctx,
 		doc.AccountId,
 		bson.D{{"$set", doc}},
@@ -43,7 +41,7 @@ func (m MongoDeliveryNotificationRepository) Save(config domain.DeliveryNotifica
 
 func (m MongoDeliveryNotificationRepository) FindById(id domain.AccountID) *domain.DeliveryNotificationConfig {
 	var doc *document
-	err := m.mongo.FindOne(m.ctx, bson.D{primitive.E{Key: "_id", Value: id}}).Decode(&doc)
+	err := m.collection.FindOne(m.ctx, bson.D{primitive.E{Key: "_id", Value: id}}).Decode(&doc)
 	if err != nil {
 		return nil
 	}
