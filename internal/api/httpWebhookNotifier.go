@@ -13,22 +13,19 @@ type HttpWebhookNotifier struct {
 }
 
 func (h HttpWebhookNotifier) Notify(sms *domain.Sms, webhookUrl string) error {
-	smsEntityResponse := openapi.SmsEntityResponse{
-		Id:        string(sms.Id),
-		To:        sms.To,
-		From:      sms.From.Number,
-		Content:   sms.Content,
-		Owner:     string(sms.UserId),
-		CreatedAt: sms.CreatedAt,
-		IsSent:    sms.IsSent,
-	}
-	if lastAttempt := lastAttemptToDto(sms.LastAttempt); lastAttempt != nil {
-		smsEntityResponse.LastAttempt = *lastAttempt
-	}
 	notification := openapi.EventNotificationDto{
 		EventType: openapi.MESSAGE_DELIVERED,
-		Data:      smsEntityResponse,
-		Metadata:  sms.Metadata,
+		Data: openapi.SmsEntityResponse{
+			Id:          string(sms.Id),
+			To:          sms.To,
+			From:        sms.From.Number,
+			Content:     sms.Content,
+			Owner:       string(sms.UserId),
+			CreatedAt:   sms.CreatedAt,
+			IsSent:      sms.IsSent,
+			LastAttempt: lastAttemptToDto(sms.LastAttempt),
+		},
+		Metadata: sms.Metadata,
 	}
 	if notification, err := json.Marshal(notification); err != nil {
 		return err
