@@ -48,7 +48,7 @@ func (entity *MongoMessageEntity) ToMessage(id string) *domain.Sms {
 		From:           domain.PhoneNumber{Number: entity.From},
 		To:             entity.To,
 		IsSent:         entity.IsSent,
-		LastAttempt:    mapAttemptToModel(*entity.LastAttempt),
+		LastAttempt:    mapAttemptToModel(entity.LastAttempt),
 		Content:        entity.Content,
 		UserId:         domain.AccountID(entity.Owner),
 		IdempotencyKey: entity.IdempotencyKey,
@@ -67,7 +67,10 @@ func mapAttemptToDocument(attempt domain.Attempt) *AttemptDocument {
 	return nil
 }
 
-func mapAttemptToModel(attempt AttemptDocument) domain.Attempt {
+func mapAttemptToModel(attempt *AttemptDocument) domain.Attempt {
+	if attempt == nil {
+		return nil
+	}
 	switch attempt.Type {
 	case "success":
 		return domain.SuccessAttempt{
