@@ -51,6 +51,7 @@ func CreateNewSMS(userId AccountID, from PhoneNumber, to PhoneNumber, content st
 		IsSent:         false,
 		LastAttempt:    nil,
 		CreatedAt:      time.Now(),
+		LastUpdateAt:   time.Now(),
 		IdempotencyKey: idempotencyKey,
 		Metadata:       metadata,
 		Configuration:  configuration,
