@@ -11,7 +11,7 @@ type MongoMessageEntity struct {
 	To             string            `bson:"to"`
 	Content        string            `bson:"content"`
 	IsSent         bool              `bson:"isSent"`
-	LastAttempt    AttemptDocument   `bson:"lastAttempt"`
+	LastAttempt    *AttemptDocument  `bson:"lastAttempt,omitempty"`
 	Owner          string            `bson:"owner"`
 	IdempotencyKey string            `bson:"idempotencyKey"`
 	CreatedAt      time.Time         `bson:"createdAt"`
@@ -48,7 +48,7 @@ func (entity *MongoMessageEntity) ToMessage(id string) *domain.Sms {
 		From:           domain.PhoneNumber{Number: entity.From},
 		To:             entity.To,
 		IsSent:         entity.IsSent,
-		LastAttempt:    mapAttemptToModel(entity.LastAttempt),
+		LastAttempt:    mapAttemptToModel(*entity.LastAttempt),
 		Content:        entity.Content,
 		UserId:         domain.AccountID(entity.Owner),
 		IdempotencyKey: entity.IdempotencyKey,
@@ -58,13 +58,13 @@ func (entity *MongoMessageEntity) ToMessage(id string) *domain.Sms {
 	}
 }
 
-func mapAttemptToDocument(attempt domain.Attempt) AttemptDocument {
+func mapAttemptToDocument(attempt domain.Attempt) *AttemptDocument {
 	if success, ok := attempt.(domain.SuccessAttempt); ok {
-		return AttemptDocument{Type: "success", AttemptCount: success.AttemptCount, PhoneId: string(success.PhoneId)}
+		return &AttemptDocument{Type: "success", AttemptCount: success.AttemptCount, PhoneId: string(success.PhoneId)}
 	} else if failure, ok := attempt.(domain.FailedAttempt); ok {
-		return AttemptDocument{Type: "failure", FailureReason: failure.Reason, AttemptCount: failure.AttemptCount, PhoneId: string(success.PhoneId)}
+		return &AttemptDocument{Type: "failure", FailureReason: failure.Reason, AttemptCount: failure.AttemptCount, PhoneId: string(success.PhoneId)}
 	}
-	return AttemptDocument{}
+	return nil
 }
 
 func mapAttemptToModel(attempt AttemptDocument) domain.Attempt {
