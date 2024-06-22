@@ -13,8 +13,12 @@ type HttpWebhookNotifier struct {
 }
 
 func (h HttpWebhookNotifier) Notify(sms *domain.Sms, webhookUrl string) error {
+	eventType := mapNotificationEventType(*sms)
+	if eventType == "" {
+		return fmt.Errorf("cannot establish notification type")
+	}
 	notification := openapi.EventNotificationDto{
-		EventType: openapi.MESSAGE_DELIVERED,
+		EventType: eventType,
 		Data: openapi.SmsEntityResponse{
 			Id:          string(sms.Id),
 			To:          sms.To,
@@ -40,6 +44,17 @@ func (h HttpWebhookNotifier) Notify(sms *domain.Sms, webhookUrl string) error {
 		}
 		return nil
 	}
+}
+
+func mapNotificationEventType(sms domain.Sms) openapi.EventNotificationType {
+	if sms.LastAttempt != nil {
+		if _, ok := sms.LastAttempt.(domain.SuccessAttempt); ok {
+			return openapi.SUCCEEDED
+		} else if _, ok := sms.LastAttempt.(domain.FailedAttempt); ok {
+			return openapi.FAILED
+		}
+	}
+	return ""
 }
 
 var _ domain.WebhookNotifier = (*HttpWebhookNotifier)(nil)
