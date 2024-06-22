@@ -24,6 +24,7 @@ func (h HttpWebhookNotifier) Notify(sms *domain.Sms, webhookUrl string) error {
 			CreatedAt:   sms.CreatedAt,
 			IsSent:      sms.IsSent,
 			LastAttempt: lastAttemptToDto(sms.LastAttempt),
+			UpdatedAt:   sms.LastUpdateAt,
 		},
 		Metadata: sms.Metadata,
 	}

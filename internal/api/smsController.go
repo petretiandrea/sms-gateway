@@ -28,16 +28,7 @@ func (s SmsApiController) GetMessages(c *gin.Context) {
 	}
 	var responses []openapi.SmsEntityResponse
 	for _, message := range messages {
-		responses = append(responses, openapi.SmsEntityResponse{
-			Id:          string(message.Id),
-			To:          message.To,
-			From:        message.From.Number,
-			Content:     message.Content,
-			Owner:       string(message.UserId),
-			CreatedAt:   message.CreatedAt,
-			IsSent:      message.IsSent,
-			LastAttempt: lastAttemptToDto(message.LastAttempt),
-		})
+		responses = append(responses, smsToResponseEntity(&message))
 	}
 	c.JSON(http.StatusOK, openapi.GetMessages200Response{
 		Messages: responses,
@@ -47,16 +38,7 @@ func (s SmsApiController) GetMessages(c *gin.Context) {
 
 func (s SmsApiController) GetSmsById(c *gin.Context) {
 	if message := s.Sms.GetSMS(domain.SmsId(c.Param("smsId"))); message != nil {
-		c.JSONP(http.StatusOK, openapi.SmsEntityResponse{
-			Id:          string(message.Id),
-			To:          message.To,
-			From:        message.From.Number,
-			Content:     message.Content,
-			Owner:       string(message.UserId),
-			CreatedAt:   message.CreatedAt,
-			IsSent:      message.IsSent,
-			LastAttempt: lastAttemptToDto(message.LastAttempt),
-		})
+		c.JSONP(http.StatusOK, smsToResponseEntity(message))
 		return
 	}
 
@@ -86,16 +68,7 @@ func (s SmsApiController) SendSms(c *gin.Context) {
 		Metadata:       sendRequest.Metadata,
 	}
 	if createMessage, err := s.Sms.SendSMS(sendCommand); err == nil && createMessage != nil {
-		c.JSONP(http.StatusCreated, openapi.SmsEntityResponse{
-			Id:          string(createMessage.Id),
-			To:          createMessage.To,
-			From:        createMessage.From.Number,
-			Content:     createMessage.Content,
-			Owner:       string(createMessage.UserId),
-			CreatedAt:   createMessage.CreatedAt,
-			IsSent:      createMessage.IsSent,
-			LastAttempt: lastAttemptToDto(createMessage.LastAttempt),
-		})
+		c.JSONP(http.StatusCreated, smsToResponseEntity(createMessage))
 	} else {
 		c.JSON(http.StatusBadRequest, err)
 	}
@@ -115,6 +88,20 @@ func lastAttemptToDto(attempt domain.Attempt) *openapi.SmsEntityResponseLastAtte
 		}
 	}
 	return nil
+}
+
+func smsToResponseEntity(sms *domain.Sms) openapi.SmsEntityResponse {
+	return openapi.SmsEntityResponse{
+		Id:          string(sms.Id),
+		To:          sms.To,
+		From:        sms.From.Number,
+		Content:     sms.Content,
+		Owner:       string(sms.UserId),
+		CreatedAt:   sms.CreatedAt,
+		IsSent:      sms.IsSent,
+		LastAttempt: lastAttemptToDto(sms.LastAttempt),
+		UpdatedAt:   sms.LastUpdateAt,
+	}
 }
 
 var (
