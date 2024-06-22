@@ -56,14 +56,12 @@ func (service *DeliveryNotificationService) NotifyDelivery(sms domain.Sms) error
 	if sms := service.smsRepository.FindById(sms.Id); sms == nil {
 		return errors.New(fmt.Sprintf("Sms with id %s not found", sms.Id))
 	} else {
-		if sms.IsSent {
-			if config := service.repo.FindById(sms.UserId); config != nil {
-				if config.Enabled {
-					if err := service.webhookNotifier.Notify(sms, config.WebhookURL); err != nil {
-						return err
-					}
-					service.log.Info("Delivery notification sent", zap.String("smsId", string(sms.Id)))
+		if config := service.repo.FindById(sms.UserId); config != nil {
+			if config.Enabled {
+				if err := service.webhookNotifier.Notify(sms, config.WebhookURL); err != nil {
+					return err
 				}
+				service.log.Info("Delivery notification sent", zap.String("smsId", string(sms.Id)))
 			}
 		}
 	}
