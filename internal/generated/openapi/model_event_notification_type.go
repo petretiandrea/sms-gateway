@@ -14,5 +14,6 @@ type EventNotificationType string
 
 // List of EventNotificationType
 const (
-	MESSAGE_DELIVERED EventNotificationType = "message.delivered"
+	SUCCEEDED EventNotificationType = "message.deliver.succeeded"
+	FAILED    EventNotificationType = "message.deliver.failed"
 )

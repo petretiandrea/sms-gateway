@@ -336,7 +336,8 @@ components:
     EventNotificationType:
       type: string
       enum:
-        - message.delivered
+        - message.deliver.succeeded
+        - message.deliver.failed
     EventNotificationDto:
       type: object
       properties:
