@@ -19,7 +19,7 @@ type AccountAPI interface {
 	// GetAccountById Get /accounts/:accountId
 	GetAccountById(c *gin.Context)
 
-	// RegisterAccount Post /accounts/
+	// RegisterAccount Post /accounts
 	// Register new account
 	RegisterAccount(c *gin.Context)
 }

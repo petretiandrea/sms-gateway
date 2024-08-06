@@ -16,7 +16,7 @@ import (
 
 type WebhooksAPI interface {
 
-	// WebhooksPost Post /webhooks/
+	// WebhooksPost Post /webhooks
 	// Enable webhook delivery
 	WebhooksPost(c *gin.Context)
 }

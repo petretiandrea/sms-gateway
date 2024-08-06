@@ -16,6 +16,6 @@ import (
 
 type ReportsAPI interface {
 
-	// ReportMessageStatus Post /attempts/
+	// ReportMessageStatus Post /attempts
 	ReportMessageStatus(c *gin.Context)
 }

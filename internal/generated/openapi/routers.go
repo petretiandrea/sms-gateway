@@ -86,7 +86,7 @@ func getRoutes(handleFunctions ApiHandleFunctions) []Route {
 		{
 			"RegisterAccount",
 			http.MethodPost,
-			"/accounts/",
+			"/accounts",
 			handleFunctions.AccountAPI.RegisterAccount,
 		},
 		{
@@ -98,7 +98,7 @@ func getRoutes(handleFunctions ApiHandleFunctions) []Route {
 		{
 			"RegisterPhone",
 			http.MethodPost,
-			"/phones/",
+			"/phones",
 			handleFunctions.PhoneAPI.RegisterPhone,
 		},
 		{
@@ -110,13 +110,13 @@ func getRoutes(handleFunctions ApiHandleFunctions) []Route {
 		{
 			"ReportMessageStatus",
 			http.MethodPost,
-			"/attempts/",
+			"/attempts",
 			handleFunctions.ReportsAPI.ReportMessageStatus,
 		},
 		{
 			"GetMessages",
 			http.MethodGet,
-			"/messages/",
+			"/messages",
 			handleFunctions.SmsAPI.GetMessages,
 		},
 		{
@@ -128,13 +128,13 @@ func getRoutes(handleFunctions ApiHandleFunctions) []Route {
 		{
 			"SendSms",
 			http.MethodPost,
-			"/messages/",
+			"/messages",
 			handleFunctions.SmsAPI.SendSms,
 		},
 		{
 			"WebhooksPost",
 			http.MethodPost,
-			"/webhooks/",
+			"/webhooks",
 			handleFunctions.WebhooksAPI.WebhooksPost,
 		},
 	}

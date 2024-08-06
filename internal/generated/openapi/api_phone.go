@@ -19,7 +19,7 @@ type PhoneAPI interface {
 	// GetPhoneById Get /phones/:phoneId
 	GetPhoneById(c *gin.Context)
 
-	// RegisterPhone Post /phones/
+	// RegisterPhone Post /phones
 	// Register new phone
 	RegisterPhone(c *gin.Context)
 

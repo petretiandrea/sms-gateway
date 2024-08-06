@@ -42,8 +42,14 @@ func main() {
 	defer cleanupTracer()
 
 	server := gin.New()
-	server.RedirectFixedPath = true
-	server.RedirectTrailingSlash = true
+	server.Use(func(c *gin.Context) {
+		if strings.HasSuffix(c.Request.URL.Path, "/") {
+			c.Request.URL.Path = strings.TrimRight(c.Request.URL.Path, "/")
+			server.HandleContext(c)
+		} else {
+			c.Next()
+		}
+	})
 	server.Use(ginzap.GinzapWithConfig(log, &ginzap.Config{
 		TimeFormat: time.RFC3339,
 		UTC:        true,

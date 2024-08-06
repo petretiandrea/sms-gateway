@@ -16,7 +16,7 @@ import (
 
 type SmsAPI interface {
 
-	// GetMessages Get /messages/
+	// GetMessages Get /messages
 	// Get all filtered sms
 	GetMessages(c *gin.Context)
 
@@ -24,7 +24,7 @@ type SmsAPI interface {
 	// Get an sms
 	GetSmsById(c *gin.Context)
 
-	// SendSms Post /messages/
+	// SendSms Post /messages
 	// Send a new sms
 	SendSms(c *gin.Context)
 }

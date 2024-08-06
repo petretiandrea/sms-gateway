@@ -13,7 +13,7 @@ servers:
   - url: https://localhost:8080/
 paths:
 
-  /phones/:
+  /phones:
     post:
       tags:
         - phone
@@ -91,7 +91,7 @@ paths:
         '404':
           description: "Phone not found"
 
-  /accounts/:
+  /accounts:
     post:
       tags:
         - account
@@ -159,7 +159,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SmsEntityResponse"
-  /messages/:
+  /messages:
     get:
       tags:
         - sms
@@ -234,7 +234,7 @@ paths:
         '400':
           description: "Invalid request"
 
-  /webhooks/:
+  /webhooks:
     post:
       tags:
         - webhooks
@@ -256,7 +256,7 @@ paths:
         "400":
           description: "Bad request"
 
-  /attempts/:
+  /attempts:
     post:
       tags:
         - reports
