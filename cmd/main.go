@@ -2,19 +2,13 @@ package main
 
 import (
 	"context"
-	firebase "firebase.google.com/go"
+	_ "embed"
 	"fmt"
-	ginzap "github.com/gin-contrib/zap"
-	"github.com/gin-gonic/gin"
-	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
-	"go.uber.org/zap"
-	"google.golang.org/api/option"
-	"net/http"
-	userApi "sms-gateway/internal/api"
+	"sms-gateway/internal/api"
+	"sms-gateway/internal/api/middleware"
 	"sms-gateway/internal/application"
 	"sms-gateway/internal/config"
 	"sms-gateway/internal/events"
-	"sms-gateway/internal/generated/openapi"
 	"sms-gateway/internal/health"
 	"sms-gateway/internal/infra"
 	"sms-gateway/internal/infra/changes"
@@ -22,18 +16,26 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	firebase "firebase.google.com/go"
+	ginzap "github.com/gin-contrib/zap"
+	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+	"go.uber.org/zap"
+	"google.golang.org/api/option"
 )
 
-const VERSION = "2.2.1"
+//go:embed version.txt
+var version string
 
 func main() {
 	PrintInfo()
 	log, _ := zap.NewProduction()
 	zap.ReplaceGlobals(log)
-	appConfig := config.LoadConfig("app.yaml")
+	appConfig := config.LoadConfig("../app-dev.yaml")
 	cleanupTracer, errTracer := initTracer(OpenTelemetryConfig{
 		serviceName:    appConfig.ServiceName,
-		serviceVersion: VERSION,
+		serviceVersion: version,
 		ctx:            context.Background(),
 	})
 	if errTracer != nil {
@@ -95,7 +97,7 @@ func main() {
 	deliveryNotificationRepo := mongo.NewMongoDeliveryNotificationRepository(mongoContext, mongoDatabase.Collection("deliveryconfigs"))
 
 	changeFeedProducer := changes.NewMessageChangeFeedProducer()
-	webHookNotifier := userApi.HttpWebhookNotifier{}
+	webHookNotifier := api.HttpWebhookNotifier{}
 	deliveryNotificationService := application.NewDeliveryNotificationService(deliveryNotificationRepo, messageRepository, webHookNotifier)
 	userAccountService := application.NewUserAccountService(accountRepository)
 	smsService := application.NewSmsService(&messageRepository, application.NewPhoneService(&phoneRepository), pushService, changeFeedProducer)
@@ -104,36 +106,39 @@ func main() {
 	go deliveryConsumer.Start()
 	defer deliveryConsumer.Stop()
 
-	server.Use(userApi.NewApiKeyMiddleware(userAccountService, func(request *http.Request) bool {
-		return strings.Contains(request.URL.Path, "/phones") ||
-			strings.Contains(request.URL.Path, "/messages") ||
-			strings.Contains(request.URL.Path, "/webhook") ||
-			strings.Contains(request.URL.Path, "/attempts")
-	}))
+	apiKeyMiddleware := middleware.NewApiKeyMiddleware(userAccountService)
 
 	health.RegisterGinHealthCheck(server, mongoClient)
 
-	openapi.NewRouterWithGinEngine(server, openapi.ApiHandleFunctions{
-		AccountAPI: userApi.UserAccountController{
-			CreateUserAccountUseCase: application.NewUserAccountService(accountRepository),
-		},
-		PhoneAPI: userApi.PhoneApiController{
-			Phone:   application.NewPhoneService(&phoneRepository),
-			Account: userAccountService,
-		},
-		SmsAPI: userApi.SmsApiController{
-			Account:           userAccountService,
-			Sms:               smsService,
-			MessageRepository: messageRepository,
-		},
-		WebhooksAPI: userApi.DeliveryNotificationController{
-			Account:              userAccountService,
-			DeliveryNotification: deliveryNotificationService,
-		},
-		ReportsAPI: userApi.AttemptController{
+	serverInterface := api.Controller {
+		AttemptController: api.AttemptController{
 			SmsService: smsService,
 		},
-	})
+		PhoneApiController: api.PhoneApiController {
+			Phone: application.NewPhoneService(&phoneRepository),
+			Account: userAccountService,
+		},
+		SmsApiController: api.SmsApiController {
+			Account: userAccountService,
+			Sms: smsService,
+			MessageRepository: messageRepository,
+		},
+		UserAccountController: api.UserAccountController{
+			CreateUserAccountUseCase: application.NewUserAccountService(accountRepository),
+		},
+		DeliveryNotificationController: api.DeliveryNotificationController{
+			Account: userAccountService,
+			DeliveryNotification: deliveryNotificationService,
+		},
+	}
+
+	api.RegisterHandlers(
+		server, 
+		api.NewStrictHandler(&serverInterface, []api.StrictMiddlewareFunc{
+				apiKeyMiddleware,
+			},
+		),
+	)
 
 	err = server.Run("0.0.0.0:8080")
 	if err != nil {
@@ -142,6 +147,5 @@ func main() {
 }
 
 func PrintInfo() {
-	fmt.Printf("\n   _____                  _____       _                           \n  / ____|                / ____|     | |                          \n | (___  _ __ ___  ___  | |  __  __ _| |_ _____      ____ _ _   _ \n  \\___ \\| '_ ` _ \\/ __| | | |_ |/ _` | __/ _ \\ \\ /\\ / / _` | | | |\n  ____) | | | | | \\__ \\ | |__| | (_| | ||  __/\\ V  V / (_| | |_| |\n |_____/|_| |_| |_|___/  \\_____|\\__,_|\\__\\___| \\_/\\_/ \\__,_|\\__, |\n                                                             __/ |\n                                                            |___/ \n")
-	fmt.Printf("Version %s\n", VERSION)
+	fmt.Printf("Running SMS Gateway, version: %s\n", version)
 }

@@ -1,9 +1,10 @@
 package application
 
 import (
-	"github.com/pkg/errors"
 	"sms-gateway/internal/domain"
 	"sms-gateway/internal/infra"
+
+	"github.com/pkg/errors"
 )
 
 type SmsService struct {
@@ -19,8 +20,8 @@ type CreateMessageCommand struct {
 	From           string
 	Account        domain.UserAccount
 	IdempotencyKey string
-	WebhookUrl     string
-	Metadata       map[string]string
+	WebhookUrl     *string
+	Metadata       *map[string]string
 }
 
 func NewSmsService(
@@ -41,7 +42,7 @@ func (service *SmsService) SendSMS(params CreateMessageCommand) (*domain.Sms, er
 		if params.Metadata == nil {
 			metadata = make(map[string]string)
 		} else {
-			metadata = params.Metadata
+			metadata = *params.Metadata
 		}
 		message := domain.CreateNewSMS(
 			params.Account.Id,

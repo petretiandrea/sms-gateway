@@ -7,7 +7,7 @@ mongo_database_name: "smsgateway"
 dry_run: 'true'
 
 firebase:
-  credentials_file: 'be-aesthetic-admin-sdk.json'
+  credentials_file: '../be-aesthetic-admin-sdk.json'
   collection_sms: 'sms-dev'
   collection_user_account: 'user-account-dev'
   collection_phone: 'phone-dev'

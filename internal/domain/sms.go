@@ -1,8 +1,9 @@
 package domain
 
 import (
-	"github.com/pkg/errors"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/google/uuid"
 )
@@ -25,7 +26,7 @@ type Sms struct {
 }
 
 type WebhookConfiguration struct {
-	Url string
+	Url *string
 }
 
 type QueryParams struct {

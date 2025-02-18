@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"sms-gateway/internal/domain"
-	"sms-gateway/internal/generated/openapi"
+
+	"github.com/google/uuid"
 )
 
 type HttpWebhookNotifier struct {
@@ -17,14 +18,14 @@ func (h HttpWebhookNotifier) Notify(sms *domain.Sms, webhookUrl string) error {
 	if eventType == "" {
 		return fmt.Errorf("cannot establish notification type")
 	}
-	notification := openapi.EventNotificationDto{
+	notification := EventNotificationDto {
 		EventType: eventType,
-		Data: openapi.SmsEntityResponse{
-			Id:          string(sms.Id),
+		Data: SmsEntityResponse{
+			Id:          uuid.MustParse(string(sms.Id)),
 			To:          sms.To,
 			From:        sms.From.Number,
 			Content:     sms.Content,
-			Owner:       string(sms.UserId),
+			Owner:       uuid.MustParse(string(sms.UserId)),
 			CreatedAt:   sms.CreatedAt,
 			IsSent:      sms.IsSent,
 			LastAttempt: lastAttemptToDto(sms.LastAttempt),
@@ -46,12 +47,12 @@ func (h HttpWebhookNotifier) Notify(sms *domain.Sms, webhookUrl string) error {
 	}
 }
 
-func mapNotificationEventType(sms domain.Sms) openapi.EventNotificationType {
+func mapNotificationEventType(sms domain.Sms) EventNotificationType {
 	if sms.LastAttempt != nil {
 		if _, ok := sms.LastAttempt.(domain.SuccessAttempt); ok {
-			return openapi.SUCCEEDED
+			return MessageDeliverSucceeded
 		} else if _, ok := sms.LastAttempt.(domain.FailedAttempt); ok {
-			return openapi.FAILED
+			return MessageDeliverFailed
 		}
 	}
 	return ""
