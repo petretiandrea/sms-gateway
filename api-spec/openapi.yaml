@@ -33,7 +33,6 @@ paths:
             application/json:
               schema:
                 type: string
-                format: uuid
                 description: "Phone ID"
         '400':
           description: "Invalid request"
@@ -67,7 +66,6 @@ paths:
             application/json:
               schema:
                 type: string
-                format: uuid
                 description: "Phone ID"
         '400':
           description: "Invalid request"

@@ -880,7 +880,7 @@ type RegisterPhoneResponseObject interface {
 	VisitRegisterPhoneResponse(w http.ResponseWriter) error
 }
 
-type RegisterPhone201JSONResponse openapi_types.UUID
+type RegisterPhone201JSONResponse string
 
 func (response RegisterPhone201JSONResponse) VisitRegisterPhoneResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -939,7 +939,7 @@ type UpdateFcmTokenResponseObject interface {
 	VisitUpdateFcmTokenResponse(w http.ResponseWriter) error
 }
 
-type UpdateFcmToken200JSONResponse openapi_types.UUID
+type UpdateFcmToken200JSONResponse string
 
 func (response UpdateFcmToken200JSONResponse) VisitUpdateFcmTokenResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")

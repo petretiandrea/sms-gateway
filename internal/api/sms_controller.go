@@ -53,14 +53,19 @@ func (c *SmsApiController) SendSms(
 	if idempotencyKey == nil {
 		return SendSms400Response{}, nil
 	}
+	metadata := (*map[string]string)(request.Body.Metadata)
+	var webhookUrl *string
+	if (request.Body.Webhook != nil) {
+		webhookUrl = request.Body.Webhook.Url
+	}
 	sendCommand := application.CreateMessageCommand{
 		From:           request.Body.From,
 		To:             request.Body.To,
 		Content:        request.Body.Content,
 		IdempotencyKey: *idempotencyKey,
 		Account:        user,
-		WebhookUrl:     request.Body.Webhook.Url,
-		Metadata:       (*map[string]string)(request.Body.Metadata),
+		WebhookUrl:     webhookUrl,
+		Metadata:       metadata,
 	}
 	if createMessage, err := c.Sms.SendSMS(sendCommand); err == nil && createMessage != nil {
 		return SendSms201JSONResponse(smsToResponseEntity(createMessage)), nil

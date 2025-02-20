@@ -24,7 +24,7 @@ func NewApiKeyMiddleware(accountService application.UserAccountService) api.Stri
 						authorized = true
 					}
 				}
-				if authorized {
+				if !authorized {
 					ctx.AbortWithStatusJSON(http.StatusUnauthorized, errors.New("invalid ApiKey"))
 					return
 				}

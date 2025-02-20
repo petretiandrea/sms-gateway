@@ -21,7 +21,7 @@ func (c *PhoneApiController) RegisterPhone(ctx context.Context, request Register
 		domain.PhoneNumber{Number: request.Body.Phone},
 		user.Id,
 	); err == nil {
-		return RegisterPhone201JSONResponse(uuid.MustParse(string(device.Id))), nil
+		return RegisterPhone201JSONResponse(string(device.Id)), nil
 	} else {
 		return RegisterPhone400Response{}, nil
 	}
@@ -57,7 +57,7 @@ func (c *PhoneApiController) UpdateFcmToken(
 		domain.PhoneId(request.PhoneId.String()),
 		domain.FCMToken(*request.Body.Token),
 	); err == nil {
-		return UpdateFcmToken200JSONResponse(uuid.MustParse(string(device.Id))), nil
+		return UpdateFcmToken200JSONResponse(string(device.Id)), nil
 	} else {
 		return UpdateFcmToken400Response{}, nil
 	}
