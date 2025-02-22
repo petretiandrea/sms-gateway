@@ -36,7 +36,7 @@ func main() {
 	defer log.Sync()
 
 	log.Infof("Running SMS Gateway, version: %s\n", version)
-	
+
 	k := koanf.New(".")
 	if err := k.Load(file.Provider("../config/app.yaml"), yaml.Parser()); err != nil {
 		log.Fatalf("error loading config: %v", err)

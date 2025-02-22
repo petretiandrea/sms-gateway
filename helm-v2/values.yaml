@@ -21,18 +21,18 @@ service:
     - 8080
 
 envConfig:
-  FIREBASE_CREDENTIALS__FILE: /be-aesthetic-admin-sdk.json
-  DRY__RUN: "false"
+  ENV_FIREBASE_CREDENTIALS__FILE: /be-aesthetic-admin-sdk.json
+  ENV_DRY__RUN: "false"
   
   OTEL_EXPORTER_OTLP_ENDPOINT: "http://opentelemetry-collector.monitoring.svc.cluster.local:4317"
   OTEL_EXPORTER_OTLP_INSECURE: "true"
   OTEL_EXPORTER_OTLP_COMPRESSION: "gzip"
 
 secretKeyRef:
-  - name: 'MONGO__CONNECTION__STRING'
+  - name: 'ENV_MONGO__CONNECTION__STRING'
     secretRefName: 'sms-gateway'
     key: 'MONGO_CONNECTION_STRING'
-  - name: 'MONGO__DATABASE__NAME'
+  - name: 'ENV_MONGO__DATABASE__NAME'
     secretRefName: 'sms-gateway'
     key: 'MONGO_DATABASE_NAME'
 
