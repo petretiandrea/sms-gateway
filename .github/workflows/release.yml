@@ -55,7 +55,10 @@ jobs:
 
       - name: Update of Go version file with the new version
         if: steps.semantic.outputs.new_release_published == 'true'
-        run: echo ${{ steps.semantic.outputs.new_release_version }} > cmd/version.txt
+        run: |
+          echo ${{ steps.semantic.outputs.new_release_version }} > cmd/version.txt
+          sed -i -e "s/appVersion:.*/appVersion: \"${{ steps.semantic.outputs.new_release_version }}\"/g" helm-v2/Chart.yaml
+
       - name: Docker meta for SMS Gateway Service
         id: meta
         uses: docker/metadata-action@v4
@@ -88,17 +91,3 @@ jobs:
             @semantic-release/github@9.2.6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Get image tag for deploy
-        id: tag_deploy
-        run: echo "tag=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}" >> $GITHUB_OUTPUT;
-
-
-  deploy:
-    needs: [build]
-    name: "Deploy to K8s"
-    uses: ./.github/workflows/k8s-deploy-helm.yml
-    with:
-      microservice-name: sms-gateway-service-v2
-      helm-path: "./helm-v2/"
-      image-tag: "${{ needs.build.outputs.tag_deploy }}"
