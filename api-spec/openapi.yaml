@@ -33,7 +33,6 @@ paths:
             application/json:
               schema:
                 type: string
-                format: uuid
                 description: "Phone ID"
         '400':
           description: "Invalid request"
@@ -63,6 +62,11 @@ paths:
       responses:
         '200':
           description: "Update successfully"
+          content:
+            application/json:
+              schema:
+                type: string
+                description: "Phone ID"
         '400':
           description: "Invalid request"
     get:
@@ -159,6 +163,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SmsEntityResponse"
+        "404":
+          description: "Sms not found"
+          
   /messages:
     get:
       tags:
@@ -300,6 +307,11 @@ components:
             mapping:
               success: '#/components/schemas/SuccessfulAttempt'
               failure: '#/components/schemas/FailedAttempt'
+      required:
+        - messageId
+        - phoneId
+        - attempt
+        - result
     FailedAttempt:
       type: object
       properties:
@@ -309,12 +321,16 @@ components:
         reason:
           type: string
           description: "Reason of failure attempt"
+      required:
+        - type
     SuccessfulAttempt:
       type: object
       properties:
         type:
           type: string
           pattern: "success"
+      required:
+        - type
 
     WebhookEntityResponse:
       type: object
@@ -323,6 +339,8 @@ components:
           type: string
         enabled:
           type: boolean
+      required:
+        - enabled
     CreateWebhookRequest:
       type: object
       properties:
@@ -331,7 +349,6 @@ components:
         enabled:
           type: boolean
       required:
-        - webhookURL
         - enabled
     EventNotificationType:
       type: string
@@ -347,6 +364,10 @@ components:
           $ref: '#/components/schemas/SmsEntityResponse'
         metadata:
           $ref: '#/components/schemas/AdditionalMetadata'
+      required:
+        - eventType
+        - data
+        - metadata
     SmsEntityResponse:
       type: object
       properties:
@@ -377,6 +398,8 @@ components:
             mapping:
               success: '#/components/schemas/SuccessfulAttempt'
               failure: '#/components/schemas/FailedAttempt'
+          required:
+            - attemptCount
         createdAt:
           type: string
           format: date-time
@@ -449,6 +472,12 @@ components:
         updatedAt:
           type: string
           format: date-time
+      required:
+        - id
+        - phone
+        - account
+        - createdAt
+        - updatedAt
 
     CreateAccountRequestDto:
       type: object
@@ -476,6 +505,7 @@ components:
         - accountId
         - phoneNumber
         - apiKey
+        - isActive
 
   securitySchemes:
     ApiKeyAuth:

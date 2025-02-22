@@ -1,10 +1,12 @@
 package events
 
 import (
-	"go.uber.org/zap"
+	"context"
 	"sms-gateway/internal/application"
 	"sms-gateway/internal/domain"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 type MessageChangeFeedProcessor struct {
@@ -27,9 +29,10 @@ func NewDeliveryNotificationConsumer(changeFeedController domain.MessageChangeFe
 func (consumer MessageChangeFeedProcessor) Start() {
 	consumer.log.Info("Resume checkpoint", zap.Time("checkpointTime", consumer.checkpointTime))
 	consumer.activeStream = consumer.changeFeedController.ResumeFrom(&consumer.checkpointTime)
+	ctx := context.Background()
 	defer consumer.activeStream.Close()
 	for message := range consumer.activeStream.Changes() {
-		if err := consumer.service.NotifyDelivery(message); err != nil {
+		if err := consumer.service.NotifyDelivery(ctx, message); err != nil {
 			consumer.log.Error("Failed to notify sms delivery", zap.Error(err))
 		}
 		consumer.checkpointTime = time.Now()

@@ -2,25 +2,25 @@ package infra
 
 import (
 	"context"
-	"firebase.google.com/go/messaging"
 	"sms-gateway/internal/domain"
+
+	"firebase.google.com/go/messaging"
 )
 
 type FirebasePushNotification struct {
-	ctx    context.Context
 	client *messaging.Client
 	dryRun bool
 }
 
-func NewFirebasePushNotification(ctx context.Context, client *messaging.Client) FirebasePushNotification {
-	return FirebasePushNotification{ctx: ctx, client: client, dryRun: false}
+func NewFirebasePushNotification(client *messaging.Client) FirebasePushNotification {
+	return FirebasePushNotification{client: client, dryRun: false}
 }
 
 func (receiver *FirebasePushNotification) EnableDryRun() {
 	receiver.dryRun = true
 }
 
-func (receiver *FirebasePushNotification) Send(message domain.Sms, token string) error {
+func (receiver *FirebasePushNotification) Send(ctx context.Context, message domain.Sms, token string) error {
 	firebaseMessage := &messaging.Message{
 		Token: token,
 		Data: map[string]string{
@@ -38,7 +38,7 @@ func (receiver *FirebasePushNotification) Send(message domain.Sms, token string)
 		//return err
 		return nil
 	} else {
-		_, err := receiver.client.Send(receiver.ctx, firebaseMessage)
+		_, err := receiver.client.Send(ctx, firebaseMessage)
 		return err
 	}
 }

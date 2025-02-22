@@ -1,6 +1,9 @@
 package domain
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+)
 
 type DeliveryNotificationConfig struct {
 	AccountId  AccountID
@@ -9,8 +12,8 @@ type DeliveryNotificationConfig struct {
 }
 
 type DeliveryNotificationConfigRepository interface {
-	Save(DeliveryNotificationConfig) (bool, error)
-	FindById(AccountID) *DeliveryNotificationConfig
+	Save(context.Context, DeliveryNotificationConfig) (bool, error)
+	FindById(context.Context, AccountID) *DeliveryNotificationConfig
 }
 
 func (config DeliveryNotificationConfig) String() string {

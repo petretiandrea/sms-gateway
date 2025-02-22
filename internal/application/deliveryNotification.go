@@ -1,10 +1,12 @@
 package application
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"go.uber.org/zap"
 	"sms-gateway/internal/domain"
+
+	"go.uber.org/zap"
 )
 
 type DeliveryNotificationService struct {
@@ -28,9 +30,10 @@ func NewDeliveryNotificationService(
 }
 
 func (service *DeliveryNotificationService) UpdateDeliveryConfig(
+	ctx context.Context,
 	config domain.DeliveryNotificationConfig,
 ) (*domain.DeliveryNotificationConfig, error) {
-	if _, err := service.repo.Save(config); err == nil {
+	if _, err := service.repo.Save(ctx, config); err == nil {
 		return &config, nil
 	} else {
 		return nil, err
@@ -38,11 +41,12 @@ func (service *DeliveryNotificationService) UpdateDeliveryConfig(
 }
 
 func (service *DeliveryNotificationService) DisableDeliveryNotification(
+	ctx context.Context,
 	id domain.AccountID,
 ) *domain.DeliveryNotificationConfig {
-	if config := service.repo.FindById(id); config != nil {
+	if config := service.repo.FindById(ctx, id); config != nil {
 		config.Enabled = false
-		if _, err := service.repo.Save(*config); err == nil {
+		if _, err := service.repo.Save(ctx, *config); err == nil {
 			return config
 		} else {
 			return nil
@@ -52,13 +56,13 @@ func (service *DeliveryNotificationService) DisableDeliveryNotification(
 	}
 }
 
-func (service *DeliveryNotificationService) NotifyDelivery(sms domain.Sms) error {
-	if sms := service.smsRepository.FindById(sms.Id); sms == nil {
+func (service *DeliveryNotificationService) NotifyDelivery(ctx context.Context, sms domain.Sms) error {
+	if sms := service.smsRepository.FindById(ctx, sms.Id); sms == nil {
 		return errors.New(fmt.Sprintf("Sms with id %s not found", sms.Id))
 	} else {
-		if config := service.repo.FindById(sms.UserId); config != nil {
+		if config := service.repo.FindById(ctx, sms.UserId); config != nil {
 			if config.Enabled {
-				if err := service.webhookNotifier.Notify(sms, config.WebhookURL); err != nil {
+				if err := service.webhookNotifier.Notify(ctx, sms, config.WebhookURL); err != nil {
 					return err
 				}
 				service.log.Info("Delivery notification sent", zap.String("smsId", string(sms.Id)))

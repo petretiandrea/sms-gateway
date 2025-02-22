@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -20,9 +21,9 @@ type UserAccount struct {
 }
 
 type UserAccountRepository interface {
-	Save(UserAccount) (bool, error)
-	FindById(AccountID) *UserAccount
-	FindByApiKey(ApiKey) *UserAccount
+	Save(context.Context, UserAccount) (bool, error)
+	FindById(context.Context, AccountID) *UserAccount
+	FindByApiKey(context.Context, ApiKey) *UserAccount
 }
 
 func NewUserAccount(phone string) UserAccount {

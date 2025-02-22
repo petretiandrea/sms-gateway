@@ -2,21 +2,25 @@ package mongo
 
 import (
 	"context"
+	"sms-gateway/internal/domain"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"sms-gateway/internal/domain"
 )
 
 const idempotencyKeyName = "idempotencyKey"
 
 type MongoMessageRepository struct {
-	context    context.Context
 	collection *mongo.Collection
 }
 
-func (r MongoMessageRepository) Find(params domain.QueryParams) ([]domain.Sms, error) {
+func NewMongoMessageRepository(collection *mongo.Collection) MongoMessageRepository {
+	return MongoMessageRepository{collection: collection}
+}
+
+func (r MongoMessageRepository) Find(ctx context.Context, params domain.QueryParams) ([]domain.Sms, error) {
 	filter := bson.M{}
 	if params.From != "" {
 		filter["from"] = params.From
@@ -25,14 +29,14 @@ func (r MongoMessageRepository) Find(params domain.QueryParams) ([]domain.Sms, e
 		filter["isSent"] = *params.IsSent
 	}
 	find, err := r.collection.Find(
-		r.context,
+		ctx,
 		filter,
 	)
 	if err != nil {
 		return nil, err
 	}
 	var messages []MongoMessageEntity
-	err = find.All(r.context, &messages)
+	err = find.All(ctx, &messages)
 	if err != nil {
 		return nil, err
 	}
@@ -43,14 +47,11 @@ func (r MongoMessageRepository) Find(params domain.QueryParams) ([]domain.Sms, e
 	return domainMessages, nil
 }
 
-func NewMongoMessageRepository(ctx context.Context, collection *mongo.Collection) MongoMessageRepository {
-	return MongoMessageRepository{context: ctx, collection: collection}
-}
 
-func (r MongoMessageRepository) Save(message domain.Sms) (*domain.Sms, error) {
+func (r MongoMessageRepository) Save(ctx context.Context, message domain.Sms) (*domain.Sms, error) {
 	entity := smsMapToEntity(message)
 	if _, err := r.collection.UpdateByID(
-		r.context,
+		ctx,
 		string(message.Id),
 		bson.D{{"$set", entity}}, options.Update().SetUpsert(true),
 	); err != nil {
@@ -59,19 +60,19 @@ func (r MongoMessageRepository) Save(message domain.Sms) (*domain.Sms, error) {
 	return &message, nil
 }
 
-func (r MongoMessageRepository) FindById(id domain.SmsId) *domain.Sms {
+func (r MongoMessageRepository) FindById(ctx context.Context, id domain.SmsId) *domain.Sms {
 	// if err := i.collection.FindOne(i.context, bson.D{primitive.E{Key: "_id", Value: accountId}}).Decode(&entity); err == nil {
 	var message MongoMessageEntity
-	if err := r.collection.FindOne(r.context, bson.D{primitive.E{Key: "_id", Value: id}}).Decode(&message); err == nil {
+	if err := r.collection.FindOne(ctx, bson.D{primitive.E{Key: "_id", Value: id}}).Decode(&message); err == nil {
 		return message.ToMessage(message.Id)
 	}
 	return nil
 }
 
-func (r MongoMessageRepository) FindExisting(idempotencyKey string) *domain.Sms {
+func (r MongoMessageRepository) FindExisting(ctx context.Context, idempotencyKey string) *domain.Sms {
 	// if err := i.collection.FindOne(i.context, bson.D{primitive.E{Key: "apiKey", Value: apiKey}}).Decode(&entity); err == nil {
 	var message MongoMessageEntity
-	if err := r.collection.FindOne(r.context, bson.D{primitive.E{Key: idempotencyKeyName, Value: idempotencyKey}}).Decode(&message); err == nil {
+	if err := r.collection.FindOne(ctx, bson.D{primitive.E{Key: idempotencyKeyName, Value: idempotencyKey}}).Decode(&message); err == nil {
 		return message.ToMessage(message.Id)
 	} else {
 		return nil
