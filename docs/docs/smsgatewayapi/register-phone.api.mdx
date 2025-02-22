@@ -1,0 +1,71 @@
+---
+id: register-phone
+title: "Register new phone"
+description: "Register new phone"
+sidebar_label: "Register new phone"
+hide_title: true
+hide_table_of_contents: true
+api: eJyVVE1vm0AQ/SvWnDdAoh4iTnWTqLL6FcXpyeIwhilsArub3SUOQvz3ahZwcJNW6gWj+Xxv3jM9eCwdpDswlVYEmQBtyKKXWm0KSMFSKZ0nexvSAhzlrZW+g3TXw9rIL9StW19BusuGTIClp5ac/6SLDtIecq08Kc+vaEwt8zA4fnBacczlFTXIb74zBCno/QPlHgQYyzC8JMfZEdtrmfNWqhKGYVwoLRUnFLz0NdfdLcHfjdCuvYZhGFud0cqNKy6Sc/4pyOVWGkYJKYS+1XwCKkD8N6MJqnh38uZ6gvIhSd5u36hnrGWxmm4a6J5WzPxWig4rMynUkK80S2e0C6dElgfikHdBQvtM1gUFW1tDCpX3xqVxXOsc60o7n14ml0kMrOgs+JaZjbdayn4kiiEIAiQjqwgLsiBAYcPZtZFnnGYOfKu7V5/cvGBjalrofNSXh/3SYcmk6PbbdvUZPR2we3PTSR3MgzrUoGRuhrwlL1EVlvBjydEo1w0Pr2VOyoXNR5iYV7S6iBIQi9ukcXw4HCIM2UjbMp5aXfx1c3XzfXtzdhElUeWbmufydUdI51ESJRxiLRpUi1XvandC6HhaTy8+NjVKxaMCrH6SdTK9Y9ezcBzp+z06+mnrYeDwU0uW/66ZgGe0Evd8yF02iFkk9sEjdZDC1Wjus3vey+V1O0r7h9EHMXes85yM/2dttrDk7Y/tPQjYT5+HRhfcY/EAIjyDiDrwD04LsR5qVGWLJdeOM9lG+MZ/j8F/0wuzmlOqWyCcrSgmCvxkQu8W9/3o62E41o+pv3YcnT9Ws2bZMAy/AedG1fc=
+sidebar_class_name: "post api-method"
+info_path: smsgatewayapi/sms-gateway
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Register new phone"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"post"}
+  path={"/phones"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Register new phone
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+  children={"Request"}
+>
+</Heading>
+
+<ParamsDetails
+  parameters={undefined}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={{"content":{"application/json":{"schema":{"type":"object","properties":{"phone":{"type":"string"}},"required":["phone"],"title":"RegisterPhoneRequestDto"}}}}}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"201":{"description":"Phone registered","content":{"application/json":{"schema":{"type":"string","description":"Phone ID"}}}},"400":{"description":"Invalid request"}}}
+>
+  
+</StatusCodes>
+
+
+      
