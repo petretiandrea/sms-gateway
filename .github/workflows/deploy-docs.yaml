@@ -7,6 +7,7 @@ on:
     paths:
       - 'docs/**'
       - 'api-spec/**'
+      - '.github/workflows/deploy-docs.yaml'
 
 permissions:
   contents: write
@@ -23,13 +24,12 @@ jobs:
         with:
           node-version: '20.11.0'
       
-      - name: Docs workdir
-        run: cd docs
-
       - name: Install dependencies
+        working-directory: docs
         run: npm ci
 
       - name: Build website
+        working-directory: docs
         run: |
             npm run gen-api-docs    
             npm run build
