@@ -13,8 +13,6 @@ strategy:
 image:
   repository: petretiandrea/sms-gateway-service-v2
   pullPolicy: Always
-  # Overrides the image tag whose default is the chart appVersion.
-  tag: "latest"
 
 service:
   create: true
@@ -31,10 +29,10 @@ envConfig:
   OTEL_EXPORTER_OTLP_COMPRESSION: "gzip"
 
 secretKeyRef:
-  - name: 'MONGOCONNECTIONSTRING'
+  - name: 'MONGO_CONNECTION_STRING'
     secretRefName: 'sms-gateway'
     key: 'MONGO_CONNECTION_STRING'
-  - name: 'MONGODATABASENAME'
+  - name: 'MONGO_DATABASE_NAME'
     secretRefName: 'sms-gateway'
     key: 'MONGO_DATABASE_NAME'
 
