@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"context"
 	"time"
 
 	"github.com/google/uuid"
@@ -19,10 +20,10 @@ type Phone struct {
 }
 
 type PhoneRepository interface {
-	Save(phone Phone) (*Phone, error)
-	FindById(id PhoneId) *Phone
-	FindByPhoneNumber(number PhoneNumber) *Phone
-	Delete(id PhoneId) bool
+	Save(ctx context.Context, phone Phone) (*Phone, error)
+	FindById(ctx context.Context, id PhoneId) *Phone
+	FindByPhoneNumber(ctx context.Context, number PhoneNumber) *Phone
+	Delete(ctx context.Context, id PhoneId) bool
 }
 
 func NewPhone(phone PhoneNumber, accountId AccountID, token FCMToken) Phone {

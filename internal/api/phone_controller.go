@@ -18,6 +18,7 @@ type PhoneApiController struct {
 func (c *PhoneApiController) RegisterPhone(ctx context.Context, request RegisterPhoneRequestObject) (RegisterPhoneResponseObject, error) {
 	user := ctx.Value("user").(domain.UserAccount)
 	if device, err := c.Phone.RegisterPhone(
+		ctx,
 		domain.PhoneNumber{Number: request.Body.Phone},
 		user.Id,
 	); err == nil {
@@ -29,7 +30,7 @@ func (c *PhoneApiController) RegisterPhone(ctx context.Context, request Register
 
 // GetPhoneById implements StrictServerInterface.
 func (c *PhoneApiController) GetPhoneById(ctx context.Context, request GetPhoneByIdRequestObject) (GetPhoneByIdResponseObject, error) {
-	if device, err := c.Phone.GetPhoneById(domain.PhoneId(request.PhoneId)); device != nil {
+	if device, err := c.Phone.GetPhoneById(ctx, domain.PhoneId(request.PhoneId)); device != nil {
 		deviceToken := string(device.Token)
 		return GetPhoneById200JSONResponse{
 			Id:        uuid.MustParse(string(device.Id)),
@@ -54,6 +55,7 @@ func (c *PhoneApiController) UpdateFcmToken(
 	request UpdateFcmTokenRequestObject,
 ) (UpdateFcmTokenResponseObject, error) {
 	if device, err := c.Phone.UpdateFCMToken(
+		ctx,
 		domain.PhoneId(request.PhoneId.String()),
 		domain.FCMToken(*request.Body.Token),
 	); err == nil {

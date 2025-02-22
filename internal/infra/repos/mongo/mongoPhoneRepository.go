@@ -2,18 +2,18 @@ package mongo
 
 import (
 	"context"
+	"sms-gateway/internal/domain"
+	"time"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"sms-gateway/internal/domain"
-	"time"
 )
 
 const phoneKey = "phone"
 
 type MongoPhoneRepository struct {
-	context    context.Context
 	collection *mongo.Collection
 }
 
@@ -26,14 +26,14 @@ type PhoneJsonEntity struct {
 	UpdatedAt time.Time `bson:"updatedAt"`
 }
 
-func NewMongoPhoneRepository(ctx context.Context, collection *mongo.Collection) MongoPhoneRepository {
-	return MongoPhoneRepository{context: ctx, collection: collection}
+func NewMongoPhoneRepository(collection *mongo.Collection) MongoPhoneRepository {
+	return MongoPhoneRepository{collection: collection}
 }
 
-func (r *MongoPhoneRepository) Save(phone domain.Phone) (*domain.Phone, error) {
+func (r *MongoPhoneRepository) Save(ctx context.Context, phone domain.Phone) (*domain.Phone, error) {
 	entity := phoneToEntity(phone)
 	if _, err := r.collection.UpdateByID(
-		r.context,
+		ctx,
 		string(phone.Id),
 		bson.D{{"$set", entity}}, options.Update().SetUpsert(true),
 	); err != nil {
@@ -43,24 +43,24 @@ func (r *MongoPhoneRepository) Save(phone domain.Phone) (*domain.Phone, error) {
 
 }
 
-func (r *MongoPhoneRepository) FindById(id domain.PhoneId) *domain.Phone {
+func (r *MongoPhoneRepository) FindById(ctx context.Context, id domain.PhoneId) *domain.Phone {
 	var message PhoneJsonEntity
-	if err := r.collection.FindOne(r.context, bson.D{primitive.E{Key: "_id", Value: id}}).Decode(&message); err == nil {
+	if err := r.collection.FindOne(ctx, bson.D{primitive.E{Key: "_id", Value: id}}).Decode(&message); err == nil {
 		return message.toMessage(message.Id)
 	}
 	return nil
 }
 
-func (r *MongoPhoneRepository) FindByPhoneNumber(number domain.PhoneNumber) *domain.Phone {
+func (r *MongoPhoneRepository) FindByPhoneNumber(ctx context.Context, number domain.PhoneNumber) *domain.Phone {
 	var message PhoneJsonEntity
-	if err := r.collection.FindOne(r.context, bson.D{primitive.E{Key: phoneKey, Value: number.Number}}).Decode(&message); err == nil {
+	if err := r.collection.FindOne(ctx, bson.D{primitive.E{Key: phoneKey, Value: number.Number}}).Decode(&message); err == nil {
 		return message.toMessage(message.Id)
 	}
 	return nil
 }
 
-func (r *MongoPhoneRepository) Delete(id domain.PhoneId) bool {
-	if _, err := r.collection.DeleteOne(r.context, bson.D{primitive.E{Key: "_id", Value: id}}); err != nil {
+func (r *MongoPhoneRepository) Delete(ctx context.Context, id domain.PhoneId) bool {
+	if _, err := r.collection.DeleteOne(ctx, bson.D{primitive.E{Key: "_id", Value: id}}); err != nil {
 		return false
 	}
 	return true
@@ -87,3 +87,5 @@ func (entity *PhoneJsonEntity) toMessage(id string) *domain.Phone {
 		UpdatedAt: entity.UpdatedAt,
 	}
 }
+
+var _ domain.PhoneRepository = (*MongoPhoneRepository)(nil)

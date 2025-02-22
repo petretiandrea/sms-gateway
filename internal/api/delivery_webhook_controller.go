@@ -25,7 +25,7 @@ func (c *DeliveryNotificationController) PostWebhooks(
 		Enabled:    request.Body.Enabled,
 		AccountId:  user.Id,
 	}
-	if config, err := c.DeliveryNotification.UpdateDeliveryConfig(configToUpdate); err == nil {
+	if config, err := c.DeliveryNotification.UpdateDeliveryConfig(ctx, configToUpdate); err == nil {
 		return PostWebhooks200JSONResponse{
 			WebhookURL: &config.WebhookURL,
 			Enabled: config.Enabled,

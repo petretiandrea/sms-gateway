@@ -1,6 +1,7 @@
 package application
 
 import (
+	"context"
 	"sms-gateway/internal/domain"
 	"sms-gateway/internal/infra"
 
@@ -33,8 +34,8 @@ func NewSmsService(
 	return SmsService{repo: repo, phone: phoneService, notification: pushService, messageFeedController: messageFeedController}
 }
 
-func (service *SmsService) SendSMS(params CreateMessageCommand) (*domain.Sms, error) {
-	if message := service.repo.FindExisting(params.IdempotencyKey); message != nil {
+func (service *SmsService) SendSMS(ctx context.Context, params CreateMessageCommand) (*domain.Sms, error) {
+	if message := service.repo.FindExisting(ctx, params.IdempotencyKey); message != nil {
 		return message, nil
 	} else {
 		// retrieve phoneAccount associated
@@ -53,40 +54,41 @@ func (service *SmsService) SendSMS(params CreateMessageCommand) (*domain.Sms, er
 			metadata,
 			domain.WebhookConfiguration{Url: params.WebhookUrl},
 		)
-		phoneAccount, err := service.phone.GetPhoneByNumber(message.From)
+		phoneAccount, err := service.phone.GetPhoneByNumber(ctx, message.From)
 		if err != nil {
 			return nil, err
 		}
 		if phoneAccount == nil {
 			return nil, nil
 		}
-		_, err = service.repo.Save(message)
+		_, err = service.repo.Save(ctx, message)
 		if err != nil {
 			return nil, err
 		}
-		if err := service.notification.Send(message, string(phoneAccount.Token)); err != nil {
+		if err := service.notification.Send(ctx, message, string(phoneAccount.Token)); err != nil {
 			return nil, err
 		}
 		return &message, nil
 	}
 }
 
-func (service *SmsService) GetSMS(id domain.SmsId) *domain.Sms {
-	return service.repo.FindById(id)
+func (service *SmsService) GetSMS(ctx context.Context, id domain.SmsId) *domain.Sms {
+	return service.repo.FindById(ctx, id)
 }
 
 func (service *SmsService) RegisterAttempt(
+	ctx context.Context,
 	id domain.SmsId,
 	accountID domain.AccountID,
 	attempt domain.Attempt,
 ) (*domain.Sms, error) {
-	sms := service.repo.FindById(id)
+	sms := service.repo.FindById(ctx, id)
 	if sms == nil {
 		return nil, nil
 	}
 	if sms.UserId == accountID {
 		sms.RegisterAttempt(attempt)
-		save, err := service.repo.Save(*sms)
+		save, err := service.repo.Save(ctx, *sms)
 		if err != nil {
 			return nil, err
 		} else {

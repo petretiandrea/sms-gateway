@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"context"
 	"time"
 
 	"github.com/pkg/errors"
@@ -35,10 +36,10 @@ type QueryParams struct {
 }
 
 type Repository interface {
-	Save(message Sms) (*Sms, error)
-	FindById(id SmsId) *Sms
-	FindExisting(idempotencyKey string) *Sms
-	Find(params QueryParams) ([]Sms, error)
+	Save(ctx context.Context, message Sms) (*Sms, error)
+	FindById(ctx context.Context, id SmsId) *Sms
+	FindExisting(ctx context.Context, idempotencyKey string) *Sms
+	Find(ctx context.Context, params QueryParams) ([]Sms, error)
 }
 
 func CreateNewSMS(userId AccountID, from PhoneNumber, to PhoneNumber, content string, idempotencyKey string, metadata map[string]string,

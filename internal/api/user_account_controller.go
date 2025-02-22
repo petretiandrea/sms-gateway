@@ -18,7 +18,7 @@ func (c *UserAccountController) RegisterAccount(
 	accountRequest := application.CreateNewAccountParams{
 		Phone: request.Body.PhoneNumber,
 	}
-	if newAccount, err := c.CreateUserAccountUseCase.CreateNewAccount(accountRequest); err == nil {
+	if newAccount, err := c.CreateUserAccountUseCase.CreateNewAccount(ctx, accountRequest); err == nil {
 		return RegisterAccount201JSONResponse{
 			AccountId: string(newAccount.Id),
 			PhoneNumber: newAccount.Phone,
@@ -35,7 +35,7 @@ func (c *UserAccountController) GetAccountById(
 	request GetAccountByIdRequestObject,
 ) (GetAccountByIdResponseObject, error) {
 	accountId := domain.AccountID(request.AccountId.String())
-	if foundAccount := c.CreateUserAccountUseCase.GetUserAccount(accountId); foundAccount != nil {
+	if foundAccount := c.CreateUserAccountUseCase.GetUserAccount(ctx, accountId); foundAccount != nil {
 		return GetAccountById200JSONResponse{
 			AccountId: string(foundAccount.Id),
 			PhoneNumber: foundAccount.Phone,

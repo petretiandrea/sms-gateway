@@ -19,7 +19,7 @@ func NewApiKeyMiddleware(accountService application.UserAccountService) api.Stri
 				apiKey := ctx.GetHeader("Api-Key")
 				authorized := false
 				if apiKey != "" {
-					if user := accountService.GetUserAccountByApiKey(domain.ApiKey(apiKey)); user != nil {
+					if user := accountService.GetUserAccountByApiKey(ctx, domain.ApiKey(apiKey)); user != nil {
 						ctx.Set("user", *user)
 						authorized = true
 					}

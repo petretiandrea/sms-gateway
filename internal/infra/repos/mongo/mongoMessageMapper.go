@@ -62,7 +62,7 @@ func mapAttemptToDocument(attempt domain.Attempt) *AttemptDocument {
 	if success, ok := attempt.(domain.SuccessAttempt); ok {
 		return &AttemptDocument{Type: "success", AttemptCount: success.AttemptCount, PhoneId: string(success.PhoneId)}
 	} else if failure, ok := attempt.(domain.FailedAttempt); ok {
-		return &AttemptDocument{Type: "failure", FailureReason: failure.Reason, AttemptCount: failure.AttemptCount, PhoneId: string(success.PhoneId)}
+		return &AttemptDocument{Type: "failure", FailureReason: failure.Reason, AttemptCount: failure.AttemptCount, PhoneId: string(failure.PhoneId)}
 	}
 	return nil
 }

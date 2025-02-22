@@ -22,6 +22,7 @@ func (c *AttemptController) ReportMessageStatus(
 		return nil, errors.New("Invalid attempt type")
 	} else {
 		if sms, err := c.SmsService.RegisterAttempt(
+			ctx,
 			domain.SmsId(request.Body.MessageId.String()),
 			user.Id,
 			attempt,
@@ -36,7 +37,7 @@ func (c *AttemptController) ReportMessageStatus(
 }
 
 func reportRequestToAttemptDomain(request ReportMessageStatusRequestObject) domain.Attempt {
-	if attemptRaw, err := request.Body.Result.ValueByDiscriminator(); err != nil {
+	if attemptRaw, err := request.Body.Result.ValueByDiscriminator(); err == nil {
 		switch attempt := attemptRaw.(type) {
 		case SuccessfulAttempt:
 			// Handle SuccessfulAttempt

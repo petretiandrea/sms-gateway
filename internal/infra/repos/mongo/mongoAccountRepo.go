@@ -2,16 +2,16 @@ package mongo
 
 import (
 	"context"
+	"sms-gateway/internal/domain"
+	"time"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"sms-gateway/internal/domain"
-	"time"
 )
 
 type MongoUserAccountRepository struct {
-	context    context.Context
 	collection *mongo.Collection
 }
 
@@ -23,11 +23,11 @@ type UserAccountJsonEntity struct {
 	CreatedAt   time.Time `bson:"createdAt"`
 }
 
-func NewMongoUserAccountRepository(ctx context.Context, collection *mongo.Collection) MongoUserAccountRepository {
-	return MongoUserAccountRepository{context: ctx, collection: collection}
+func NewMongoUserAccountRepository(collection *mongo.Collection) MongoUserAccountRepository {
+	return MongoUserAccountRepository{collection: collection}
 }
 
-func (i MongoUserAccountRepository) Save(account domain.UserAccount) (bool, error) {
+func (i MongoUserAccountRepository) Save(ctx context.Context, account domain.UserAccount) (bool, error) {
 	accountEntity := UserAccountJsonEntity{
 		Id:          string(account.Id),
 		Phone:       account.Phone,
@@ -36,7 +36,7 @@ func (i MongoUserAccountRepository) Save(account domain.UserAccount) (bool, erro
 		IsSuspended: account.IsSuspended,
 	}
 	if _, err := i.collection.UpdateByID(
-		i.context,
+		ctx,
 		string(account.Id),
 		bson.D{{"$set", accountEntity}},
 		options.Update().SetUpsert(true),
@@ -47,9 +47,9 @@ func (i MongoUserAccountRepository) Save(account domain.UserAccount) (bool, erro
 	}
 }
 
-func (i MongoUserAccountRepository) FindById(accountId domain.AccountID) *domain.UserAccount {
+func (i MongoUserAccountRepository) FindById(ctx context.Context, accountId domain.AccountID) *domain.UserAccount {
 	var entity *UserAccountJsonEntity
-	if err := i.collection.FindOne(i.context, bson.D{primitive.E{Key: "_id", Value: accountId}}).Decode(&entity); err == nil {
+	if err := i.collection.FindOne(ctx, bson.D{primitive.E{Key: "_id", Value: accountId}}).Decode(&entity); err == nil {
 		return &domain.UserAccount{
 			Id:          domain.AccountID(entity.Id),
 			ApiKey:      domain.ApiKey(entity.ApiKey),
@@ -61,9 +61,9 @@ func (i MongoUserAccountRepository) FindById(accountId domain.AccountID) *domain
 	return nil
 }
 
-func (i MongoUserAccountRepository) FindByApiKey(apiKey domain.ApiKey) *domain.UserAccount {
+func (i MongoUserAccountRepository) FindByApiKey(ctx context.Context, apiKey domain.ApiKey) *domain.UserAccount {
 	var entity UserAccountJsonEntity
-	if err := i.collection.FindOne(i.context, bson.D{primitive.E{Key: "apiKey", Value: apiKey}}).Decode(&entity); err == nil {
+	if err := i.collection.FindOne(ctx, bson.D{primitive.E{Key: "apiKey", Value: apiKey}}).Decode(&entity); err == nil {
 		return &domain.UserAccount{
 			Id:          domain.AccountID(entity.Id),
 			ApiKey:      domain.ApiKey(entity.ApiKey),

@@ -2,33 +2,32 @@ package mongo
 
 import (
 	"context"
+	"sms-gateway/internal/domain"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"sms-gateway/internal/domain"
 )
 
 type MongoDeliveryNotificationRepository struct {
-	ctx        context.Context
 	collection *mongo.Collection
 }
 
-func NewMongoDeliveryNotificationRepository(ctx context.Context, collection *mongo.Collection) MongoDeliveryNotificationRepository {
+func NewMongoDeliveryNotificationRepository(collection *mongo.Collection) MongoDeliveryNotificationRepository {
 	return MongoDeliveryNotificationRepository{
-		ctx:        ctx,
 		collection: collection,
 	}
 }
 
-func (m MongoDeliveryNotificationRepository) Save(config domain.DeliveryNotificationConfig) (bool, error) {
+func (m MongoDeliveryNotificationRepository) Save(ctx context.Context, config domain.DeliveryNotificationConfig) (bool, error) {
 	doc := document{
 		AccountId:  config.AccountId,
 		Enabled:    config.Enabled,
 		WebhookURL: config.WebhookURL,
 	}
 	if _, err := m.collection.UpdateByID(
-		m.ctx,
+		ctx,
 		doc.AccountId,
 		bson.D{{"$set", doc}},
 		options.Update().SetUpsert(true),
@@ -39,9 +38,9 @@ func (m MongoDeliveryNotificationRepository) Save(config domain.DeliveryNotifica
 	}
 }
 
-func (m MongoDeliveryNotificationRepository) FindById(id domain.AccountID) *domain.DeliveryNotificationConfig {
+func (m MongoDeliveryNotificationRepository) FindById(ctx context.Context, id domain.AccountID) *domain.DeliveryNotificationConfig {
 	var doc *document
-	err := m.collection.FindOne(m.ctx, bson.D{primitive.E{Key: "_id", Value: id}}).Decode(&doc)
+	err := m.collection.FindOne(ctx, bson.D{primitive.E{Key: "_id", Value: id}}).Decode(&doc)
 	if err != nil {
 		return nil
 	}

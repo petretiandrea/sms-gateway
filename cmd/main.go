@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	_ "embed"
-	"fmt"
 	"sms-gateway/internal/api"
 	"sms-gateway/internal/api/middleware"
 	"sms-gateway/internal/application"
@@ -13,13 +12,16 @@ import (
 	"sms-gateway/internal/infra"
 	"sms-gateway/internal/infra/changes"
 	"sms-gateway/internal/infra/repos/mongo"
-	"strconv"
 	"strings"
 	"time"
 
 	firebase "firebase.google.com/go"
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/env"
+	"github.com/knadh/koanf/providers/file"
+	"github.com/knadh/koanf/v2"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.uber.org/zap"
 	"google.golang.org/api/option"
@@ -29,12 +31,26 @@ import (
 var version string
 
 func main() {
-	PrintInfo()
-	log, _ := zap.NewProduction()
-	zap.ReplaceGlobals(log)
-	appConfig := config.LoadConfig("../app-dev.yaml")
+	log := zap.Must(zap.NewProduction()).Sugar()
+	zap.ReplaceGlobals(log.Desugar())
+	defer log.Sync()
+
+	log.Infof("Running SMS Gateway, version: %s\n", version)
+	
+	k := koanf.New(".")
+	if err := k.Load(file.Provider("../config/app.yaml"), yaml.Parser()); err != nil {
+		log.Fatalf("error loading config: %v", err)
+	}
+
+	// Load environment variables
+	if err := k.Load(env.Provider("ENV", ".", func(s string) string {
+		return config.StripUnderscore(strings.ToLower(strings.TrimLeft(s, "ENV_")), ".")
+	}), nil); err != nil {
+		log.Fatalf("error loading env variables %v", err)
+	}
+
 	cleanupTracer, errTracer := initTracer(OpenTelemetryConfig{
-		serviceName:    appConfig.ServiceName,
+		serviceName:    k.String("app.name"),
 		serviceVersion: version,
 		ctx:            context.Background(),
 	})
@@ -52,20 +68,22 @@ func main() {
 			c.Next()
 		}
 	})
-	server.Use(ginzap.GinzapWithConfig(log, &ginzap.Config{
+
+	ginLogger := log.Desugar().Named("gin")
+	server.Use(ginzap.GinzapWithConfig(ginLogger, &ginzap.Config{
 		TimeFormat: time.RFC3339,
 		UTC:        true,
 		SkipPaths:  []string{"/health"},
 	}))
-	server.Use(ginzap.RecoveryWithZap(log, true))
+	server.Use(ginzap.RecoveryWithZap(ginLogger, true))
 	server.Use(otelgin.Middleware(
-		appConfig.ServiceName,
+		k.String("app.name"),
 		otelgin.WithFilter(health.FilterHealthCheck),
 	))
 
 	// create async firebase ctx
 	ctx := context.Background()
-	credentials := option.WithCredentialsFile(appConfig.FirebaseConfig.CredentialsFile)
+	credentials := option.WithCredentialsFile(k.String("firebase.credentials_file"))
 	app, err := firebase.NewApp(ctx, nil, credentials)
 	if err != nil {
 		log.Error("Failed to initialize firebase app")
@@ -76,25 +94,26 @@ func main() {
 		log.Error("Failed to initialize firebase messaging")
 		return
 	}
-	pushService := infra.NewFirebasePushNotification(ctx, firebaseMessaging)
-	if active, _ := strconv.ParseBool(appConfig.DryRun); active {
+	pushService := infra.NewFirebasePushNotification(firebaseMessaging)
+	if k.Bool("dry_run") {
 		pushService.EnableDryRun()
 	}
 
 	// initialize mongo
-	mongoContext := context.Background()
-	mongoClient, err := connectMongo(appConfig.MongoConnectionString)
+	mongoClient, err := connectMongo(k.String("mongo_connection_string"))
 	if err != nil {
 		log.Error("Failed to initialize mongodb")
 		return
 	}
-	mongoDatabase := mongoClient.Database(appConfig.MongoDatabaseName)
+	mongoDatabase := mongoClient.Database(k.String("mongo_database_name"))
 
 	// user account example
-	accountRepository := mongo.NewMongoUserAccountRepository(ctx, mongoDatabase.Collection("accounts"))
-	messageRepository := mongo.NewMongoMessageRepository(ctx, mongoDatabase.Collection("messages"))
-	phoneRepository := mongo.NewMongoPhoneRepository(ctx, mongoDatabase.Collection("phones"))
-	deliveryNotificationRepo := mongo.NewMongoDeliveryNotificationRepository(mongoContext, mongoDatabase.Collection("deliveryconfigs"))
+	accountRepository := mongo.NewMongoUserAccountRepository(mongoDatabase.Collection("accounts"))
+	messageRepository := mongo.NewMongoMessageRepository(mongoDatabase.Collection("messages"))
+	phoneRepository := mongo.NewMongoPhoneRepository(mongoDatabase.Collection("phones"))
+	deliveryNotificationRepo := mongo.NewMongoDeliveryNotificationRepository(
+		mongoDatabase.Collection("deliveryconfigs"),
+	)
 
 	changeFeedProducer := changes.NewMessageChangeFeedProducer()
 	webHookNotifier := api.HttpWebhookNotifier{}
@@ -146,6 +165,3 @@ func main() {
 	}
 }
 
-func PrintInfo() {
-	fmt.Printf("Running SMS Gateway, version: %s\n", version)
-}

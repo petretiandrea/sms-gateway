@@ -1,5 +1,7 @@
 package domain
 
+import "context"
+
 type WebhookNotifier interface {
-	Notify(sms *Sms, webhookUrl string) error
+	Notify(ctx context.Context, sms *Sms, webhookUrl string) error
 }

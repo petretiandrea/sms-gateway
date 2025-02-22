@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -13,7 +14,7 @@ import (
 type HttpWebhookNotifier struct {
 }
 
-func (h HttpWebhookNotifier) Notify(sms *domain.Sms, webhookUrl string) error {
+func (h HttpWebhookNotifier) Notify(ctx context.Context, sms *domain.Sms, webhookUrl string) error {
 	eventType := mapNotificationEventType(*sms)
 	if eventType == "" {
 		return fmt.Errorf("cannot establish notification type")

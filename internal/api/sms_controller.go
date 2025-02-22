@@ -23,7 +23,7 @@ func (c *SmsApiController) GetMessages(
 		From: *request.Params.From,
 		IsSent: request.Params.IsSent,
 	}
-	messages, err := c.MessageRepository.Find(queryParams)
+	messages, err := c.MessageRepository.Find(ctx, queryParams)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +36,7 @@ func (c *SmsApiController) GetMessages(
 
 // GetSmsById implements StrictServerInterface.
 func (c *SmsApiController) GetSmsById(ctx context.Context, request GetSmsByIdRequestObject) (GetSmsByIdResponseObject, error) {
-	if message := c.Sms.GetSMS(domain.SmsId(request.SmsId.String())); message != nil {
+	if message := c.Sms.GetSMS(ctx, domain.SmsId(request.SmsId.String())); message != nil {
 		return GetSmsById200JSONResponse(smsToResponseEntity(message)), nil
 	}
 	return GetSmsById404Response{}, nil
@@ -67,7 +67,7 @@ func (c *SmsApiController) SendSms(
 		WebhookUrl:     webhookUrl,
 		Metadata:       metadata,
 	}
-	if createMessage, err := c.Sms.SendSMS(sendCommand); err == nil && createMessage != nil {
+	if createMessage, err := c.Sms.SendSMS(ctx, sendCommand); err == nil && createMessage != nil {
 		return SendSms201JSONResponse(smsToResponseEntity(createMessage)), nil
 	} else {
 		return SendSms400Response{}, nil
@@ -89,6 +89,9 @@ func smsToResponseEntity(sms *domain.Sms) SmsEntityResponse {
 }
 
 func lastAttemptToDto(attempt domain.Attempt) *SmsEntityResponse_LastAttempt {
+	if (attempt == nil) {
+		return nil
+	}
 	var attemptResponse = SmsEntityResponse_LastAttempt{
 		AttemptCount: int(attempt.AttemptNumber()),
 	}
