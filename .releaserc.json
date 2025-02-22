@@ -21,7 +21,7 @@
     [
       "@semantic-release/git",
       {
-        "assets": ["cmd/main.go"],
+        "assets": ["cmd/main.go", "cmd/version.txt", "helm-v2/Chart.yaml"],
         "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
       }
     ],
