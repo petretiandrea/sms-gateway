@@ -4,3 +4,38 @@ app-template:
     createDefaultServiceAccount: false
     labels:
       app: sms-gateway-api-v2
+
+  rawResources:
+    sms-gateway-outbox-forwarder-secrets:
+      forceRename: sms-gateway-outbox-forwarder-secrets
+      manifest:
+        apiVersion: external-secrets.io/v1
+        kind: ExternalSecret
+        metadata:
+          name: sms-gateway-outbox-forwarder-secrets
+        spec:
+          secretStoreRef:
+            name: oci-vault-backend
+            kind: ClusterSecretStore
+          refreshPolicy: CreatedOnce
+          refreshInterval: 24h
+          target:
+            name: sms-gateway-outbox-forwarder-secrets
+            creationPolicy: Owner
+            template:
+              data:
+                postgres-dsn: "postgres://{{ `{{ .username }}` }}:{{ `{{ .password }}` }}@postgres-rw.common.svc.cluster.local:5432/sms-gateway?sslmode=disable"
+                rabbitmq-url: "amqp://user:{{ `{{ .rabbitmqPassword }}` }}@rabbitmq-v2.common.svc.cluster.local:5672/"
+          data:
+            - secretKey: username
+              remoteRef:
+                key: beaesthetic-postgres
+                property: username
+            - secretKey: password
+              remoteRef:
+                key: beaesthetic-postgres
+                property: password
+            - secretKey: rabbitmqPassword
+              remoteRef:
+                key: rabbitmq-credentials
+                property: password
