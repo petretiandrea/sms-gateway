@@ -80,14 +80,14 @@ app-template:
             creationPolicy: Owner
             template:
               data:
-                postgres-dsn: "postgres://{{ `{{ .postgresUsername }}` }}:{{ `{{ .postgresPassword }}` }}@postgres-rw.common.svc.cluster.local:5432/sms-gateway?sslmode=disable"
+                postgres-dsn: "postgres://{{ `{{ .username }}` }}:{{ `{{ .password }}` }}@postgres-rw.common.svc.cluster.local:5432/sms-gateway?sslmode=disable"
                 rabbitmq-url: "{{ `{{ .rabbitmqUrl }}` }}"
           data:
-            - secretKey: postgresUsername
+            - secretKey: username
               remoteRef:
                 key: beaesthetic-postgres
                 property: username
-            - secretKey: postgresPassword
+            - secretKey: password
               remoteRef:
                 key: beaesthetic-postgres
                 property: password
