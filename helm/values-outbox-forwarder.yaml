@@ -12,15 +12,15 @@ app-template:
         main:
           image:
             repository: petretiandrea/outbox-forwarder
-            tag: "v1.1.0"
+            tag: "v1.2.0"
             pullPolicy: IfNotPresent
           env:
-            OUTBOX_SOURCE__DATA__DSN:
+            SOURCE_DATA_DSN:
               valueFrom:
                 secretKeyRef:
                   name: sms-gateway-outbox-forwarder-secrets
                   key: postgres-dsn
-            OUTBOX_CHANNELS__0__PUBLISHER__DATA__URL:
+            RABBITMQ_URL:
               valueFrom:
                 secretKeyRef:
                   name: sms-gateway-outbox-forwarder-secrets
@@ -36,6 +36,7 @@ app-template:
           source:
             type: postgres
             data:
+              dsn: ${SOURCE_DATA_DSN}
               table_name: outbox_messages
               batch_size: 100
               poll_interval: 1s
@@ -46,6 +47,7 @@ app-template:
               publisher:
                 type: rabbitmq
                 data:
+                  url: ${RABBITMQ_URL}
                   exchange: beaesthetic.sms
                   routing_key: sms.send.internal.requested
                   content_type: application/json

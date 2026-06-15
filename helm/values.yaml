@@ -25,7 +25,7 @@ app-template:
             template:
               data:
                 postgres-dsn: "postgres://{{ `{{ .username }}` }}:{{ `{{ .password }}` }}@postgres-rw.common.svc.cluster.local:5432/sms-gateway?sslmode=disable"
-                rabbitmq-url: "amqp://user:{{ `{{ .rabbitmqPassword }}` }}@rabbitmq-v2.common.svc.cluster.local:5672/"
+                rabbitmq-url: "amqp://beaesthetic:{{ `{{ .rabbitmqPassword }}` }}@rabbitmq-v2.common.svc.cluster.local:5672/"
           data:
             - secretKey: username
               remoteRef:
