@@ -1,7 +1,7 @@
 app-template:
   controllers:
     outbox-forwarder:
-      forceRename: outbox-forwarder
+      forceRename: sms-gateway-outbox-forwarder
       type: deployment
       replicas: 1
       strategy: RollingUpdate
@@ -18,19 +18,19 @@ app-template:
             OUTBOX_SOURCE__DATA__DSN:
               valueFrom:
                 secretKeyRef:
-                  name: outbox-forwarder-secrets
+                  name: sms-gateway-outbox-forwarder-secrets
                   key: postgres-dsn
             OUTBOX_CHANNELS__0__PUBLISHER__DATA__URL:
               valueFrom:
                 secretKeyRef:
-                  name: outbox-forwarder-secrets
+                  name: sms-gateway-outbox-forwarder-secrets
                   key: rabbitmq-url
 
   configMaps:
     outbox-forwarder-config:
-      forceRename: outbox-forwarder-config
+      forceRename: sms-gateway-outbox-forwarder-config
       labels:
-        app: outbox-forwarder
+        app: sms-gateway-outbox-forwarder
       data:
         outbox.yaml: |
           source:
@@ -61,37 +61,3 @@ app-template:
               subPath: outbox.yaml
               readOnly: true
 
-  rawResources:
-    outbox-forwarder-secrets:
-      forceRename: outbox-forwarder-secrets
-      manifest:
-        apiVersion: external-secrets.io/v1
-        kind: ExternalSecret
-        metadata:
-          name: outbox-forwarder-secrets
-        spec:
-          secretStoreRef:
-            name: oci-vault-backend
-            kind: ClusterSecretStore
-          refreshPolicy: CreatedOnce
-          refreshInterval: 24h
-          target:
-            name: outbox-forwarder-secrets
-            creationPolicy: Owner
-            template:
-              data:
-                postgres-dsn: "postgres://{{ `{{ .username }}` }}:{{ `{{ .password }}` }}@postgres-rw.common.svc.cluster.local:5432/sms-gateway?sslmode=disable"
-                rabbitmq-url: "amqp://user:{{ `{{ .rabbitmqPassword }}` }}@rabbitmq-v2.common.svc.cluster.local:5672/"
-          data:
-            - secretKey: username
-              remoteRef:
-                key: beaesthetic-postgres
-                property: username
-            - secretKey: password
-              remoteRef:
-                key: beaesthetic-postgres
-                property: password
-            - secretKey: rabbitmqPassword
-              remoteRef:
-                key: rabbitmq-credentials
-                property: password
