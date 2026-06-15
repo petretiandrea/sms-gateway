@@ -1,0 +1,97 @@
+app-template:
+  controllers:
+    outbox-forwarder:
+      forceRename: outbox-forwarder
+      type: deployment
+      replicas: 1
+      strategy: RollingUpdate
+      rollingUpdate:
+        surge: 1
+        unavailable: "0"
+      containers:
+        main:
+          image:
+            repository: petretiandrea/outbox-forwarder
+            tag: "v1.1.0"
+            pullPolicy: IfNotPresent
+          env:
+            OUTBOX_SOURCE__DATA__DSN:
+              valueFrom:
+                secretKeyRef:
+                  name: outbox-forwarder-secrets
+                  key: postgres-dsn
+            OUTBOX_CHANNELS__0__PUBLISHER__DATA__URL:
+              valueFrom:
+                secretKeyRef:
+                  name: outbox-forwarder-secrets
+                  key: rabbitmq-url
+
+  configMaps:
+    outbox-forwarder-config:
+      forceRename: outbox-forwarder-config
+      labels:
+        app: outbox-forwarder
+      data:
+        outbox.yaml: |
+          source:
+            type: postgres
+            data:
+              table_name: outbox_messages
+              batch_size: 100
+              poll_interval: 1s
+              initialize_schema: true
+
+          channels:
+            - name: orders.created
+              publisher:
+                type: rabbitmq
+                data:
+                  exchange: outbox.events
+                  routing_key: orders.created
+                  content_type: application/json
+
+  persistence:
+    outbox-forwarder-config:
+      type: configMap
+      identifier: outbox-forwarder-config
+      advancedMounts:
+        outbox-forwarder:
+          main:
+            - path: /etc/outbox/outbox.yaml
+              subPath: outbox.yaml
+              readOnly: true
+
+  rawResources:
+    outbox-forwarder-secrets:
+      forceRename: outbox-forwarder-secrets
+      manifest:
+        apiVersion: external-secrets.io/v1
+        kind: ExternalSecret
+        metadata:
+          name: outbox-forwarder-secrets
+        spec:
+          secretStoreRef:
+            name: oci-vault-backend
+            kind: ClusterSecretStore
+          refreshPolicy: CreatedOnce
+          refreshInterval: 24h
+          target:
+            name: outbox-forwarder-secrets
+            creationPolicy: Owner
+            template:
+              data:
+                postgres-dsn: "postgres://{{ `{{ .postgresUsername }}` }}:{{ `{{ .postgresPassword }}` }}@postgres-rw.common.svc.cluster.local:5432/sms-gateway?sslmode=disable"
+                rabbitmq-url: "{{ `{{ .rabbitmqUrl }}` }}"
+          data:
+            - secretKey: postgresUsername
+              remoteRef:
+                key: beaesthetic-postgres
+                property: username
+            - secretKey: postgresPassword
+              remoteRef:
+                key: beaesthetic-postgres
+                property: password
+            - secretKey: rabbitmqUrl
+              remoteRef:
+                key: beaesthetic-rabbitmq
+                property: url
