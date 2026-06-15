@@ -81,7 +81,7 @@ app-template:
             template:
               data:
                 postgres-dsn: "postgres://{{ `{{ .username }}` }}:{{ `{{ .password }}` }}@postgres-rw.common.svc.cluster.local:5432/sms-gateway?sslmode=disable"
-                rabbitmq-url: "{{ `{{ .rabbitmqUrl }}` }}"
+                rabbitmq-url: "amqp://user:{{ `{{ .rabbitmqPassword }}` }}@rabbitmq-v2.common.svc.cluster.local:5672/"
           data:
             - secretKey: username
               remoteRef:
@@ -91,7 +91,7 @@ app-template:
               remoteRef:
                 key: beaesthetic-postgres
                 property: password
-            - secretKey: rabbitmqUrl
+            - secretKey: rabbitmqPassword
               remoteRef:
-                key: beaesthetic-rabbitmq
-                property: url
+                key: rabbitmq-credentials
+                property: password
