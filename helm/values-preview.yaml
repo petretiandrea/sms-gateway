@@ -1,0 +1,238 @@
+app-template:
+  global:
+    fullnameOverride: sms-gateway-preview
+    createDefaultServiceAccount: false
+    labels:
+      app: sms-gateway-preview
+
+  rawResources:
+    sms-gateway-outbox-forwarder-secrets:
+      enabled: false
+
+    sms-gateway-preview-secrets:
+      forceRename: sms-gateway-preview-secrets
+      manifest:
+        apiVersion: external-secrets.io/v1
+        kind: ExternalSecret
+        metadata:
+          name: sms-gateway-preview-secrets
+        spec:
+          secretStoreRef:
+            name: oci-vault-backend
+            kind: ClusterSecretStore
+          refreshPolicy: CreatedOnce
+          refreshInterval: 24h
+          target:
+            name: sms-gateway-preview-secrets
+            creationPolicy: Owner
+            template:
+              data:
+                postgres-dsn: "postgres://{{ `{{ .username }}` }}:{{ `{{ .password }}` }}@postgres-rw.common.svc.cluster.local:5432/sms-gateway?sslmode=disable"
+                rabbitmq-url: "amqp://beaesthetic:{{ `{{ .rabbitmqPassword }}` }}@rabbitmq-v2.common.svc.cluster.local:5672/"
+          data:
+            - secretKey: username
+              remoteRef:
+                key: beaesthetic-postgres
+                property: username
+            - secretKey: password
+              remoteRef:
+                key: beaesthetic-postgres
+                property: password
+            - secretKey: rabbitmqPassword
+              remoteRef:
+                key: rabbitmq-credentials
+                property: password
+
+  controllers:
+    main:
+      forceRename: sms-gateway-service
+      type: deployment
+      replicas: 1
+      strategy: RollingUpdate
+      rollingUpdate:
+        surge: 1
+        unavailable: "0"
+      initContainers:
+        migrate:
+          image:
+            repository: petretiandrea/sms-gateway-service-v2
+            tag: 3.1.0
+            pullPolicy: IfNotPresent
+          env:
+            ENV_POSTGRES__DSN:
+              valueFrom:
+                secretKeyRef:
+                  name: sms-gateway-preview-secrets
+                  key: postgres-dsn
+          args:
+            - migrate
+            - up
+      containers:
+        main:
+          image:
+            repository: petretiandrea/sms-gateway-service-v2
+            tag: 3.1.0
+            pullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            ENV_POSTGRES__DSN:
+              valueFrom:
+                secretKeyRef:
+                  name: sms-gateway-preview-secrets
+                  key: postgres-dsn
+          envFrom:
+            - configMapRef:
+                identifier: app-config
+          probes:
+            liveness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /health
+                  port: 8080
+                initialDelaySeconds: 10
+                failureThreshold: 10
+                periodSeconds: 30
+            readiness:
+              enabled: true
+              custom: true
+              spec:
+                httpGet:
+                  path: /health
+                  port: 8080
+                initialDelaySeconds: 10
+                failureThreshold: 10
+                periodSeconds: 30
+
+    outbox-forwarder:
+      forceRename: sms-gateway-outbox-forwarder-preview
+      type: deployment
+      replicas: 1
+      strategy: RollingUpdate
+      rollingUpdate:
+        surge: 1
+        unavailable: "0"
+      containers:
+        main:
+          image:
+            repository: petretiandrea/outbox-forwarder
+            tag: "v1.2.0"
+            pullPolicy: IfNotPresent
+          env:
+            OUTBOX_SOURCE__DATA__DSN:
+              valueFrom:
+                secretKeyRef:
+                  name: sms-gateway-preview-secrets
+                  key: postgres-dsn
+            OUTBOX_CHANNELS__0__PUBLISHER__DATA__URL:
+              valueFrom:
+                secretKeyRef:
+                  name: sms-gateway-preview-secrets
+                  key: rabbitmq-url
+            OUTBOX_CHANNELS__1__PUBLISHER__DATA__URL:
+              valueFrom:
+                secretKeyRef:
+                  name: sms-gateway-preview-secrets
+                  key: rabbitmq-url
+
+  configMaps:
+    app-config:
+      forceRename: sms-gateway-service
+      labels:
+        app: sms-gateway-preview
+      data:
+        ENV_FIREBASE_CREDENTIALS__FILE: /be-aesthetic-admin-sdk.json
+        ENV_DRY__RUN: "true"
+        OTEL_EXPORTER_OTLP_ENDPOINT: "http://opentelemetry-collector.monitoring.svc.cluster.local:4317"
+        OTEL_EXPORTER_OTLP_INSECURE: "true"
+        OTEL_EXPORTER_OTLP_COMPRESSION: "gzip"
+
+    outbox-forwarder-config:
+      forceRename: sms-gateway-outbox-forwarder-preview-config
+      labels:
+        app: sms-gateway-outbox-forwarder-preview
+      data:
+        outbox.yaml: |
+          source:
+            type: postgres
+            data:
+              table_name: outbox_messages
+              batch_size: 100
+              poll_interval: 1s
+              initialize_schema: true
+
+          channels:
+            - name: beaesthetic.sms.send.internal
+              publisher:
+                type: rabbitmq
+                data:
+                  exchange: beaesthetic.sms
+                  routing_key: sms.send.internal.requested
+                  content_type: application/json
+            - name: beaesthetic.sms.delivery-confirmed
+              publisher:
+                type: rabbitmq
+                data:
+                  exchange: beaesthetic.sms
+                  routing_key: sms.delivery.confirmed
+                  content_type: application/json
+
+  persistence:
+    firebase-admin-config:
+      type: secret
+      name: firebase-admin-config
+      advancedMounts:
+        main:
+          main:
+            - path: /be-aesthetic-admin-sdk.json
+              subPath: firebase-admin.json
+              readOnly: true
+
+    outbox-forwarder-config:
+      type: configMap
+      identifier: outbox-forwarder-config
+      advancedMounts:
+        outbox-forwarder:
+          main:
+            - path: /etc/outbox/outbox.yaml
+              subPath: outbox.yaml
+              readOnly: true
+
+
+  service:
+    main:
+      forceRename: sms-gateway-service
+      controller: main
+      type: ClusterIP
+      ports:
+        http:
+          port: 8080
+          targetPort: 8080
+          protocol: TCP
+
+  ingress:
+    main:
+      forceRename: sms-gateway-ingress-preview
+      className: nginx
+      annotations:
+        cert-manager.io/cluster-issuer: https-certificate
+        nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+        nginx.ingress.kubernetes.io/rewrite-target: /$1
+        nginx.ingress.kubernetes.io/ssl-redirect: "true"
+        nginx.ingress.kubernetes.io/use-regex: "true"
+      hosts:
+        - host: agenda.beaesthetic.it
+          paths:
+            - path: /sms-gateway/v3-preview/(.*)
+              pathType: ImplementationSpecific
+              service:
+                identifier: main
+                port: http
+      tls:
+        - hosts:
+            - agenda.beaesthetic.it
+          secretName: https-certificate
