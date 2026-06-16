@@ -123,21 +123,19 @@ app-template:
             tag: "v1.2.0"
             pullPolicy: IfNotPresent
           env:
-            OUTBOX_SOURCE__DATA__DSN:
+            SOURCE_DATA_DSN:
               valueFrom:
                 secretKeyRef:
-                  name: sms-gateway-preview-secrets
+                  name: sms-gateway-outbox-forwarder-secrets
                   key: postgres-dsn
-            OUTBOX_CHANNELS__0__PUBLISHER__DATA__URL:
+            RABBITMQ_URL:
               valueFrom:
                 secretKeyRef:
-                  name: sms-gateway-preview-secrets
+                  name: sms-gateway-outbox-forwarder-secrets
                   key: rabbitmq-url
-            OUTBOX_CHANNELS__1__PUBLISHER__DATA__URL:
-              valueFrom:
-                secretKeyRef:
-                  name: sms-gateway-preview-secrets
-                  key: rabbitmq-url
+          envFrom:
+            - configMapRef:
+                identifier: app-config
 
   configMaps:
     app-config:
@@ -160,6 +158,7 @@ app-template:
           source:
             type: postgres
             data:
+              dsn: ${SOURCE_DATA_DSN}
               table_name: outbox_messages
               batch_size: 100
               poll_interval: 1s
@@ -170,15 +169,9 @@ app-template:
               publisher:
                 type: rabbitmq
                 data:
+                  url: ${RABBITMQ_URL}
                   exchange: beaesthetic.sms
                   routing_key: sms.send.internal.requested
-                  content_type: application/json
-            - name: beaesthetic.sms.delivery-confirmed
-              publisher:
-                type: rabbitmq
-                data:
-                  exchange: beaesthetic.sms
-                  routing_key: sms.delivery.confirmed
                   content_type: application/json
 
   persistence:
