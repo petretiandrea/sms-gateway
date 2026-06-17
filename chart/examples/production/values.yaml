@@ -1,0 +1,47 @@
+common:
+  config:
+    env:
+      LOG_LEVEL: INFO
+
+  secrets:
+    existingSecrets:
+      - sms-gateway-connection-secrets
+
+migration:
+  enabled: true
+
+api:
+  replicaCount: 2
+  image:
+    repository: ghcr.io/example/sms-gateway-api
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  service:
+    enabled: true
+    type: ClusterIP
+    port: 80
+    targetPort: 8080
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+outbox:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/example/sms-gateway-outbox
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  env:
+    OUTBOX_BATCH_SIZE: "100"
+    OUTBOX_POLLING_INTERVAL: "5s"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi

@@ -1,0 +1,79 @@
+{{- if .Values.outbox.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "sms-gateway.fullname" . }}-outbox
+  labels:
+    {{- include "sms-gateway.labels" . | nindent 4 }}
+    app.kubernetes.io/component: "outbox"
+spec:
+  replicas: {{ .Values.outbox.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "sms-gateway.selectorLabels" (dict "root" . "component" "outbox") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "sms-gateway.selectorLabels" (dict "root" . "component" "outbox") | nindent 8 }}
+    spec:
+      containers:
+        - name: outbox
+          image: "{{ .Values.outbox.image.repository }}:{{ .Values.outbox.image.tag }}"
+          imagePullPolicy: {{ .Values.outbox.image.pullPolicy }}
+          {{- $envFrom := include "sms-gateway.commonEnvFrom" . | trim }}
+          {{- $componentEnvFrom := include "sms-gateway.componentSecretEnvFrom" (dict "root" . "component" "outbox" "values" .Values.outbox) | trim }}
+          {{- if or $envFrom $componentEnvFrom }}
+          envFrom:
+            {{- if $envFrom }}
+            {{- $envFrom | nindent 12 }}
+            {{- end }}
+            {{- if $componentEnvFrom }}
+            {{- $componentEnvFrom | nindent 12 }}
+            {{- end }}
+          {{- end }}
+          {{- $commonSecretKeyEnv := include "sms-gateway.commonSecretKeyEnvVars" . | trim }}
+          {{- $componentEnv := include "sms-gateway.componentEnvVars" .Values.outbox.env | trim }}
+          {{- if or $commonSecretKeyEnv $componentEnv }}
+          env:
+            {{- if $commonSecretKeyEnv }}
+            {{- $commonSecretKeyEnv | nindent 12 }}
+            {{- end }}
+            {{- if $componentEnv }}
+            {{- $componentEnv | nindent 12 }}
+            {{- end }}
+          {{- end }}
+          {{- if .Values.outbox.livenessProbe.enabled }}
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - "true"
+            initialDelaySeconds: {{ default 20 .Values.outbox.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 10 .Values.outbox.livenessProbe.periodSeconds }}
+          {{- end }}
+          {{- if .Values.outbox.readinessProbe.enabled }}
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - "true"
+            initialDelaySeconds: {{ default 10 .Values.outbox.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 10 .Values.outbox.readinessProbe.periodSeconds }}
+          {{- end }}
+          {{- with .Values.outbox.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- $volumeMounts := include "sms-gateway.commonVolumeMounts" . | trim }}
+          {{- if $volumeMounts }}
+          volumeMounts:
+            {{- $volumeMounts | nindent 12 }}
+          {{- end }}
+      {{- $volumes := include "sms-gateway.commonVolumes" . | trim }}
+      {{- if $volumes }}
+      volumes:
+        {{- $volumes | nindent 8 }}
+      {{- end }}
+{{- end }}

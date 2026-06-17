@@ -1,0 +1,18 @@
+{{- if and .Values.api.enabled .Values.api.service.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "sms-gateway.fullname" . }}-api
+  labels:
+    {{- include "sms-gateway.labels" . | nindent 4 }}
+    app.kubernetes.io/component: "api"
+spec:
+  type: {{ .Values.api.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.api.service.port }}
+      targetPort: {{ .Values.api.service.targetPort }}
+      protocol: TCP
+  selector:
+    {{- include "sms-gateway.selectorLabels" (dict "root" . "component" "api") | nindent 4 }}
+{{- end }}

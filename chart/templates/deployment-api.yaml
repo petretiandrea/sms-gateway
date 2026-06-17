@@ -1,0 +1,108 @@
+{{- if .Values.api.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "sms-gateway.fullname" . }}-api
+  labels:
+    {{- include "sms-gateway.labels" . | nindent 4 }}
+    app.kubernetes.io/component: "api"
+spec:
+  replicas: {{ .Values.api.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "sms-gateway.selectorLabels" (dict "root" . "component" "api") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "sms-gateway.selectorLabels" (dict "root" . "component" "api") | nindent 8 }}
+    spec:
+      {{- if .Values.migration.enabled }}
+      initContainers:
+        - name: migration
+          image: "{{ .Values.api.image.repository }}:{{ .Values.api.image.tag }}"
+          imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          command:
+            {{- toYaml .Values.migration.command | nindent 12 }}
+          args:
+            {{- toYaml .Values.migration.args | nindent 12 }}
+          {{- $initEnvFrom := include "sms-gateway.commonEnvFrom" . | trim }}
+          {{- if $initEnvFrom }}
+          envFrom:
+            {{- $initEnvFrom | nindent 12 }}
+          {{- end }}
+          {{- $initSecretKeyEnv := include "sms-gateway.commonSecretKeyEnvVars" . | trim }}
+          {{- if $initSecretKeyEnv }}
+          env:
+            {{- $initSecretKeyEnv | nindent 12 }}
+          {{- end }}
+          {{- with .Values.migration.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- $initVolumeMounts := include "sms-gateway.commonVolumeMounts" . | trim }}
+          {{- if $initVolumeMounts }}
+          volumeMounts:
+            {{- $initVolumeMounts | nindent 12 }}
+          {{- end }}
+      {{- end }}
+      containers:
+        - name: api
+          image: "{{ .Values.api.image.repository }}:{{ .Values.api.image.tag }}"
+          imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.api.containerPort }}
+              protocol: TCP
+          {{- $envFrom := include "sms-gateway.commonEnvFrom" . | trim }}
+          {{- $componentEnvFrom := include "sms-gateway.componentSecretEnvFrom" (dict "root" . "component" "api" "values" .Values.api) | trim }}
+          {{- if or $envFrom $componentEnvFrom }}
+          envFrom:
+            {{- if $envFrom }}
+            {{- $envFrom | nindent 12 }}
+            {{- end }}
+            {{- if $componentEnvFrom }}
+            {{- $componentEnvFrom | nindent 12 }}
+            {{- end }}
+          {{- end }}
+          {{- $commonSecretKeyEnv := include "sms-gateway.commonSecretKeyEnvVars" . | trim }}
+          {{- $componentEnv := include "sms-gateway.componentEnvVars" .Values.api.env | trim }}
+          {{- if or $commonSecretKeyEnv $componentEnv }}
+          env:
+            {{- if $commonSecretKeyEnv }}
+            {{- $commonSecretKeyEnv | nindent 12 }}
+            {{- end }}
+            {{- if $componentEnv }}
+            {{- $componentEnv | nindent 12 }}
+            {{- end }}
+          {{- end }}
+          {{- if .Values.api.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.api.livenessProbe.path | quote }}
+              port: http
+            initialDelaySeconds: {{ .Values.api.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.api.livenessProbe.periodSeconds }}
+          {{- end }}
+          {{- if .Values.api.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.api.readinessProbe.path | quote }}
+              port: http
+            initialDelaySeconds: {{ .Values.api.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.api.readinessProbe.periodSeconds }}
+          {{- end }}
+          {{- with .Values.api.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- $volumeMounts := include "sms-gateway.commonVolumeMounts" . | trim }}
+          {{- if $volumeMounts }}
+          volumeMounts:
+            {{- $volumeMounts | nindent 12 }}
+          {{- end }}
+      {{- $volumes := include "sms-gateway.commonVolumes" . | trim }}
+      {{- if $volumes }}
+      volumes:
+        {{- $volumes | nindent 8 }}
+      {{- end }}
+{{- end }}

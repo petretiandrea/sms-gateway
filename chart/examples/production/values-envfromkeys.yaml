@@ -1,0 +1,38 @@
+common:
+  config:
+    env:
+      LOG_LEVEL: INFO
+
+  secrets:
+    envFromKeys:
+      POSTGRES_DSN:
+        secretName: postgres-app
+        key: dsn
+      RABBITMQ_DSN:
+        secretName: rabbitmq-app
+        key: dsn
+
+migration:
+  enabled: true
+
+api:
+  replicaCount: 2
+  image:
+    repository: ghcr.io/example/sms-gateway-api
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  service:
+    enabled: true
+    type: ClusterIP
+    port: 80
+    targetPort: 8080
+
+outbox:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/example/sms-gateway-outbox
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  env:
+    OUTBOX_BATCH_SIZE: "100"
+    OUTBOX_POLLING_INTERVAL: "5s"
