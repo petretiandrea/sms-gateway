@@ -25,8 +25,8 @@ api:
   enabled: true
   replicaCount: 1
   image:
-    repository: ghcr.io/example/sms-gateway-api
-    tag: "1.0.0"
+    repository: petretiandrea/sms-gateway-service-v2
+    tag: "3.1.0"
     pullPolicy: IfNotPresent
   env: {}
   secrets: {}
@@ -52,8 +52,8 @@ outbox:
   enabled: true
   replicaCount: 1
   image:
-    repository: ghcr.io/example/sms-gateway-outbox
-    tag: "1.0.0"
+    repository: petretiandrea/outbox-forwarder
+    tag: "v1.2.0"
     pullPolicy: IfNotPresent
   env: {}
   secrets: {}
