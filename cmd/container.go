@@ -12,6 +12,7 @@ import (
 	"sms-gateway/internal/health"
 	"sms-gateway/internal/infra"
 	"sms-gateway/internal/infra/changes"
+	rabbitmqmessaging "sms-gateway/internal/infra/messaging/rabbitmq"
 	"sms-gateway/internal/infra/repos/postgres"
 	"strings"
 	"time"
@@ -53,8 +54,10 @@ type Container struct {
 	userAccountService          *application.UserAccountService
 	phoneService                *application.PhoneService
 	smsService                  *application.SmsService
+	smsSendProcessor            *application.SMSSendProcessor
 	deliveryNotificationService *application.DeliveryNotificationService
 	deliveryConsumer            *events.MessageChangeFeedProcessor
+	smsSendConsumer             *rabbitmqmessaging.Consumer
 }
 
 func NewContainer(ctx context.Context, version string, log *zap.SugaredLogger) *Container {
@@ -83,6 +86,11 @@ func (c *Container) Config() (*koanf.Koanf, error) {
 
 	if value := os.Getenv("POSTGRES_DSN"); value != "" && k.String("postgres.dsn") == "" && k.String("postgres_dsn") == "" {
 		if err := k.Set("postgres.dsn", value); err != nil {
+			return nil, err
+		}
+	}
+	if value := os.Getenv("RABBITMQ_DSN"); value != "" && k.String("rabbitmq.dsn") == "" && k.String("rabbitmq_dsn") == "" {
+		if err := k.Set("rabbitmq.dsn", value); err != nil {
 			return nil, err
 		}
 	}
@@ -206,6 +214,23 @@ func (c *Container) PostgresDSN() (string, error) {
 	}
 	if dsn == "" {
 		return "", errors.New("postgres dsn is required")
+	}
+
+	return dsn, nil
+}
+
+func (c *Container) RabbitMQDSN() (string, error) {
+	k, err := c.Config()
+	if err != nil {
+		return "", err
+	}
+
+	dsn := k.String("rabbitmq.dsn")
+	if dsn == "" {
+		dsn = k.String("rabbitmq_dsn")
+	}
+	if dsn == "" {
+		return "", errors.New("rabbitmq dsn is required")
 	}
 
 	return dsn, nil
@@ -402,6 +427,51 @@ func (c *Container) DeliveryConsumer() (*events.MessageChangeFeedProcessor, erro
 	return c.deliveryConsumer, nil
 }
 
+func (c *Container) SMSSendProcessor() (*application.SMSSendProcessor, error) {
+	if c.smsSendProcessor != nil {
+		return c.smsSendProcessor, nil
+	}
+
+	messageRepository, err := c.MessageRepository()
+	if err != nil {
+		return nil, err
+	}
+	phoneRepository, err := c.PhoneRepository()
+	if err != nil {
+		return nil, err
+	}
+	pushService, err := c.PushService()
+	if err != nil {
+		return nil, err
+	}
+
+	c.smsSendProcessor = application.NewSMSSendProcessor(messageRepository, phoneRepository, pushService)
+	return c.smsSendProcessor, nil
+}
+
+func (c *Container) SMSSendConsumer() (*rabbitmqmessaging.Consumer, error) {
+	if c.smsSendConsumer != nil {
+		return c.smsSendConsumer, nil
+	}
+
+	dsn, err := c.RabbitMQDSN()
+	if err != nil {
+		return nil, err
+	}
+	processor, err := c.SMSSendProcessor()
+	if err != nil {
+		return nil, err
+	}
+
+	c.smsSendConsumer = rabbitmqmessaging.NewConsumer(
+		dsn,
+		rabbitmqmessaging.QueueSMSSendInternal,
+		processor,
+		c.log.Desugar(),
+	)
+	return c.smsSendConsumer, nil
+}
+
 func (c *Container) APIKeyMiddleware() (api.StrictMiddlewareFunc, error) {
 	userAccountService, err := c.UserAccountService()
 	if err != nil {
@@ -466,6 +536,12 @@ func (c *Container) StartHTTPServer() error {
 	}
 	go deliveryConsumer.Start()
 
+	smsSendConsumer, err := c.SMSSendConsumer()
+	if err != nil {
+		return err
+	}
+	go smsSendConsumer.Start(c.ctx)
+
 	server, err := c.Server()
 	if err != nil {
 		return err
@@ -477,6 +553,9 @@ func (c *Container) StartHTTPServer() error {
 func (c *Container) Close() {
 	if c.deliveryConsumer != nil {
 		c.deliveryConsumer.Stop()
+	}
+	if c.smsSendConsumer != nil {
+		c.smsSendConsumer.Stop()
 	}
 	if c.tracerCleanup != nil {
 		c.tracerCleanup()

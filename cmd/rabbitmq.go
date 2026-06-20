@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	rabbitmqtopology "sms-gateway/internal/infra/messaging/rabbitmq"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -13,15 +14,7 @@ import (
 )
 
 const (
-	defaultRabbitMQExchange = "sms"
-
-	rabbitMQSendInternalQueue      = "sms.send.internal"
-	rabbitMQSendDeadLetterQueue    = "sms.send.dead-letter"
-	rabbitMQDeliveryConfirmedQueue = "sms.delivery-confirmed"
-
-	rabbitMQSendInternalRoutingKey      = "sms.send.internal.requested"
-	rabbitMQSendDeadLetterRoutingKey    = "sms.send.dead-letter"
-	rabbitMQDeliveryConfirmedRoutingKey = "sms.delivery.confirmed"
+	defaultRabbitMQExchange = rabbitmqtopology.ExchangeSMS
 )
 
 type rabbitMQTopologyOptions struct {
@@ -152,14 +145,14 @@ func applyRabbitMQTopology(options rabbitMQTopologyOptions) error {
 		arguments amqp.Table
 	}{
 		{
-			name: rabbitMQSendInternalQueue,
+			name: rabbitmqtopology.QueueSMSSendInternal,
 			arguments: amqp.Table{
 				"x-dead-letter-exchange":    options.exchange,
-				"x-dead-letter-routing-key": rabbitMQSendDeadLetterRoutingKey,
+				"x-dead-letter-routing-key": rabbitmqtopology.RoutingKeySMSSendDeadLetter,
 			},
 		},
-		{name: rabbitMQSendDeadLetterQueue},
-		{name: rabbitMQDeliveryConfirmedQueue},
+		{name: rabbitmqtopology.QueueSMSSendDeadLetter},
+		{name: rabbitmqtopology.QueueSMSDeliveryConfirmed},
 	}
 
 	for _, queue := range queues {
@@ -179,9 +172,9 @@ func applyRabbitMQTopology(options rabbitMQTopologyOptions) error {
 		queue      string
 		routingKey string
 	}{
-		{queue: rabbitMQSendInternalQueue, routingKey: rabbitMQSendInternalRoutingKey},
-		{queue: rabbitMQSendDeadLetterQueue, routingKey: rabbitMQSendDeadLetterRoutingKey},
-		{queue: rabbitMQDeliveryConfirmedQueue, routingKey: rabbitMQDeliveryConfirmedRoutingKey},
+		{queue: rabbitmqtopology.QueueSMSSendInternal, routingKey: rabbitmqtopology.RoutingKeySMSSendInternalRequested},
+		{queue: rabbitmqtopology.QueueSMSSendDeadLetter, routingKey: rabbitmqtopology.RoutingKeySMSSendDeadLetter},
+		{queue: rabbitmqtopology.QueueSMSDeliveryConfirmed, routingKey: rabbitmqtopology.RoutingKeySMSDeliveryConfirmed},
 	}
 
 	for _, binding := range bindings {

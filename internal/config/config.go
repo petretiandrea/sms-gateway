@@ -12,6 +12,9 @@ type AppConfig struct {
 	PostgresConfig struct {
 		DSN string `yaml:"dsn"`
 	} `yaml:"postgres"`
+	RabbitMQConfig struct {
+		DSN string `yaml:"dsn"`
+	} `yaml:"rabbitmq"`
 	FirebaseConfig struct {
 		CredentialsFile string `yaml:"credentials_file"`
 		Sms             string `yaml:"collection_sms"`
