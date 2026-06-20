@@ -1,46 +1,56 @@
 package config
 
 import (
-	"fmt"
-	"github.com/kelseyhightower/envconfig"
-	"gopkg.in/yaml.v3"
-	"os"
+	"strings"
+
+	"github.com/knadh/koanf/providers/env/v2"
+	"github.com/knadh/koanf/v2"
 )
 
 type AppConfig struct {
-	ServiceName    string `yaml:"service_name"`
-	PostgresConfig struct {
-		DSN string `yaml:"dsn"`
-	} `yaml:"postgres"`
-	RabbitMQConfig struct {
-		DSN string `yaml:"dsn"`
-	} `yaml:"rabbitmq"`
-	FirebaseConfig struct {
-		CredentialsFile string `yaml:"credentials_file"`
-		Sms             string `yaml:"collection_sms"`
-		UserAccount     string `yaml:"collection_user_account"`
-		Phone           string `yaml:"collection_phone"`
-	} `yaml:"firebase"`
-	DryRun string `yaml:"dry_run"`
+	AppName  string         `koanf:"app_name"`
+	Postgres PostgresConfig `koanf:"postgres"`
+	RabbitMQ RabbitMQConfig `koanf:"rabbitmq"`
+	Firebase FirebaseConfig `koanf:"firebase"`
+	DryRun   bool           `koanf:"dry_run"`
 }
 
-func LoadConfig(configPath string) AppConfig {
-	f, err := os.Open(configPath)
-	if err != nil {
-		fmt.Println("No config file found")
+type PostgresConfig struct {
+	DSN string `koanf:"dsn"`
+}
+
+type RabbitMQConfig struct {
+	DSN string `koanf:"dsn"`
+}
+
+type FirebaseConfig struct {
+	CredentialsFile string `koanf:"credentials_file"`
+}
+
+func LoadConfig() (AppConfig, error) {
+	k := koanf.New(".")
+
+	if err := k.Load(env.Provider(".", env.Opt{
+		TransformFunc: trasnformFunction,
+	}), nil); err != nil {
+		return AppConfig{}, err
 	}
-	defer f.Close()
 
 	var cfg AppConfig
-	decoder := yaml.NewDecoder(f)
-	err = decoder.Decode(&cfg)
-	if err != nil {
-		fmt.Println("No config file found", err)
-	}
-	err = envconfig.Process("", &cfg)
-	if err != nil {
-		panic(err)
+	if err := k.Unmarshal("", &cfg); err != nil {
+		return AppConfig{}, err
 	}
 
-	return cfg
+	return cfg, nil
+}
+
+func trasnformFunction(k, v string) (string, any) {
+	// convert to lowercase and replace underscores with dots, except for double underscores which are replaced with a single underscore
+	k = StripUnderscore(strings.ToLower(k), ".")
+
+	// split for array, like "ENV_MY_ARRAY=val1 val2 val3" into []string{"val1", "val2", "val3"}
+	if strings.Contains(v, " ") {
+		return k, strings.Split(v, " ")
+	}
+	return k, v
 }

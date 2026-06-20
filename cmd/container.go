@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
-	"os"
 	"sms-gateway/internal/api"
 	"sms-gateway/internal/api/middleware"
 	"sms-gateway/internal/application"
@@ -21,10 +19,6 @@ import (
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/knadh/koanf/parsers/yaml"
-	"github.com/knadh/koanf/providers/env"
-	"github.com/knadh/koanf/providers/file"
-	"github.com/knadh/koanf/v2"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.uber.org/zap"
 	"google.golang.org/api/option"
@@ -35,7 +29,7 @@ type Container struct {
 	version string
 	log     *zap.SugaredLogger
 
-	config        *koanf.Koanf
+	config        *config.AppConfig
 	tracerCleanup func()
 
 	server *gin.Engine
@@ -68,34 +62,17 @@ func NewContainer(ctx context.Context, version string, log *zap.SugaredLogger) *
 	}
 }
 
-func (c *Container) Config() (*koanf.Koanf, error) {
+func (c *Container) Config() (*config.AppConfig, error) {
 	if c.config != nil {
 		return c.config, nil
 	}
 
-	k := koanf.New(".")
-	if err := k.Load(file.Provider("../config/app.yaml"), yaml.Parser()); err != nil {
+	cfg, err := config.LoadConfig()
+	if err != nil {
 		return nil, err
 	}
 
-	if err := k.Load(env.Provider("ENV", ".", func(s string) string {
-		return config.StripUnderscore(strings.ToLower(strings.TrimLeft(s, "ENV_")), ".")
-	}), nil); err != nil {
-		return nil, err
-	}
-
-	if value := os.Getenv("POSTGRES_DSN"); value != "" && k.String("postgres.dsn") == "" && k.String("postgres_dsn") == "" {
-		if err := k.Set("postgres.dsn", value); err != nil {
-			return nil, err
-		}
-	}
-	if value := os.Getenv("RABBITMQ_DSN"); value != "" && k.String("rabbitmq.dsn") == "" && k.String("rabbitmq_dsn") == "" {
-		if err := k.Set("rabbitmq.dsn", value); err != nil {
-			return nil, err
-		}
-	}
-
-	c.config = k
+	c.config = &cfg
 	return c.config, nil
 }
 
@@ -110,7 +87,7 @@ func (c *Container) InitTracer() error {
 	}
 
 	cleanupTracer, err := initTracer(OpenTelemetryConfig{
-		serviceName:    k.String("app.name"),
+		serviceName:    k.AppName,
 		serviceVersion: c.version,
 		ctx:            c.ctx,
 	})
@@ -150,7 +127,7 @@ func (c *Container) Server() (*gin.Engine, error) {
 	}))
 	server.Use(ginzap.RecoveryWithZap(ginLogger, true))
 	server.Use(otelgin.Middleware(
-		k.String("app.name"),
+		k.AppName,
 		otelgin.WithFilter(health.FilterHealthCheck),
 	))
 
@@ -203,37 +180,21 @@ func (c *Container) PostgresPool() (*pgxpool.Pool, error) {
 }
 
 func (c *Container) PostgresDSN() (string, error) {
-	k, err := c.Config()
+	cfg, err := c.Config()
 	if err != nil {
 		return "", err
 	}
 
-	dsn := k.String("postgres.dsn")
-	if dsn == "" {
-		dsn = k.String("postgres_dsn")
-	}
-	if dsn == "" {
-		return "", errors.New("postgres dsn is required")
-	}
-
-	return dsn, nil
+	return cfg.Postgres.DSN, nil
 }
 
 func (c *Container) RabbitMQDSN() (string, error) {
-	k, err := c.Config()
+	cfg, err := c.Config()
 	if err != nil {
 		return "", err
 	}
 
-	dsn := k.String("rabbitmq.dsn")
-	if dsn == "" {
-		dsn = k.String("rabbitmq_dsn")
-	}
-	if dsn == "" {
-		return "", errors.New("rabbitmq dsn is required")
-	}
-
-	return dsn, nil
+	return cfg.RabbitMQ.DSN, nil
 }
 
 func (c *Container) PushService() (*infra.FirebasePushNotification, error) {
@@ -241,12 +202,12 @@ func (c *Container) PushService() (*infra.FirebasePushNotification, error) {
 		return c.pushService, nil
 	}
 
-	k, err := c.Config()
+	cfg, err := c.Config()
 	if err != nil {
 		return nil, err
 	}
 
-	credentials := option.WithCredentialsFile(k.String("firebase.credentials_file"))
+	credentials := option.WithCredentialsFile(cfg.Firebase.CredentialsFile)
 	app, err := firebase.NewApp(c.ctx, nil, credentials)
 	if err != nil {
 		return nil, err
@@ -257,7 +218,7 @@ func (c *Container) PushService() (*infra.FirebasePushNotification, error) {
 	}
 
 	pushService := infra.NewFirebasePushNotification(firebaseMessaging)
-	if k.Bool("dry_run") {
+	if cfg.DryRun {
 		pushService.EnableDryRun()
 	}
 
