@@ -81,6 +81,12 @@ func (c *Container) Config() (*koanf.Koanf, error) {
 		return nil, err
 	}
 
+	if value := os.Getenv("POSTGRES_DSN"); value != "" && k.String("postgres.dsn") == "" && k.String("postgres_dsn") == "" {
+		if err := k.Set("postgres.dsn", value); err != nil {
+			return nil, err
+		}
+	}
+
 	c.config = k
 	return c.config, nil
 }
@@ -197,12 +203,6 @@ func (c *Container) PostgresDSN() (string, error) {
 	dsn := k.String("postgres.dsn")
 	if dsn == "" {
 		dsn = k.String("postgres_dsn")
-	}
-	if dsn == "" {
-		dsn = os.Getenv("POSTGRES_DSN")
-	}
-	if dsn == "" {
-		dsn = os.Getenv("ENV_POSTGRES__DSN")
 	}
 	if dsn == "" {
 		return "", errors.New("postgres dsn is required")
