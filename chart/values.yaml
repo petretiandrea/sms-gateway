@@ -41,12 +41,12 @@ api:
   resources: {}
   livenessProbe:
     enabled: true
-    path: /health/live
+    path: /health
     initialDelaySeconds: 20
     periodSeconds: 10
   readinessProbe:
     enabled: true
-    path: /health/ready
+    path: /health
     initialDelaySeconds: 10
     periodSeconds: 10
 
