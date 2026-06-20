@@ -1,6 +1,8 @@
 common:
   config:
-    env: {}
+    env:
+      APP__NAME: sms-gateway
+      DRY__RUN: "false"
     existingConfigMaps: []
 
   secrets:
