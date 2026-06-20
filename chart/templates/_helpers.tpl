@@ -60,6 +60,10 @@ Generated resource names.
 {{ include "sms-gateway.fullname" .root }}-{{ .component }}-secret
 {{- end -}}
 
+{{- define "sms-gateway.outboxConfigName" -}}
+{{ include "sms-gateway.fullname" . }}-outbox-config
+{{- end -}}
+
 {{/*
 Common envFrom sources inherited by all runtime components.
 */}}

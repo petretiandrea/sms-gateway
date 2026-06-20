@@ -4,14 +4,17 @@ import (
 	"context"
 	"github.com/alexliesenfeld/health"
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/mongo"
 	"net/http"
 	"strings"
 	"time"
 )
 
-func RegisterGinHealthCheck(gin *gin.Engine, mongo *mongo.Client) {
-	gin.GET("/health", healthCheckHandler(createHealthCheck(mongo)))
+type Pinger interface {
+	Ping(ctx context.Context) error
+}
+
+func RegisterGinHealthCheck(gin *gin.Engine, db Pinger) {
+	gin.GET("/health", healthCheckHandler(createHealthCheck(db)))
 }
 
 func FilterHealthCheck(request *http.Request) bool {
@@ -29,14 +32,14 @@ func healthCheckHandler(healthCheck health.Checker) func(ctx *gin.Context) {
 	}
 }
 
-func createHealthCheck(mongo *mongo.Client) health.Checker {
+func createHealthCheck(db Pinger) health.Checker {
 	checker := health.NewChecker(
 		health.WithCacheDuration(5*time.Minute),
 		health.WithCheck(health.Check{
-			Name:    "mongo",
+			Name:    "postgres",
 			Timeout: 2 * time.Second,
 			Check: func(ctx context.Context) error {
-				return mongo.Ping(ctx, nil)
+				return db.Ping(ctx)
 			},
 		}),
 	)

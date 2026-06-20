@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"errors"
+	"os"
 	"sms-gateway/internal/api"
 	"sms-gateway/internal/api/middleware"
 	"sms-gateway/internal/application"
@@ -10,18 +12,18 @@ import (
 	"sms-gateway/internal/health"
 	"sms-gateway/internal/infra"
 	"sms-gateway/internal/infra/changes"
-	"sms-gateway/internal/infra/repos/mongo"
+	"sms-gateway/internal/infra/repos/postgres"
 	"strings"
 	"time"
 
 	firebase "firebase.google.com/go"
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
-	mongodriver "go.mongodb.org/mongo-driver/mongo"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.uber.org/zap"
 	"google.golang.org/api/option"
@@ -37,15 +39,14 @@ type Container struct {
 
 	server *gin.Engine
 
-	mongoClient   *mongodriver.Client
-	mongoDatabase *mongodriver.Database
+	postgresPool *pgxpool.Pool
 
 	pushService *infra.FirebasePushNotification
 
-	accountRepository              *mongo.MongoUserAccountRepository
-	messageRepository              *mongo.MongoMessageRepository
-	phoneRepository                *mongo.MongoPhoneRepository
-	deliveryNotificationRepository *mongo.MongoDeliveryNotificationRepository
+	accountRepository              *postgres.UserAccountRepository
+	messageRepository              *postgres.MessageRepository
+	phoneRepository                *postgres.PhoneRepository
+	deliveryNotificationRepository *postgres.DeliveryNotificationRepository
 
 	changeFeedProducer          *changes.MessageChangeFeedProducer
 	webHookNotifier             *api.HttpWebhookNotifier
@@ -139,11 +140,11 @@ func (c *Container) Server() (*gin.Engine, error) {
 		otelgin.WithFilter(health.FilterHealthCheck),
 	))
 
-	mongoClient, err := c.MongoClient()
+	db, err := c.PostgresPool()
 	if err != nil {
 		return nil, err
 	}
-	health.RegisterGinHealthCheck(server, mongoClient)
+	health.RegisterGinHealthCheck(server, db)
 
 	controller, err := c.Controller()
 	if err != nil {
@@ -164,41 +165,50 @@ func (c *Container) Server() (*gin.Engine, error) {
 	return c.server, nil
 }
 
-func (c *Container) MongoClient() (*mongodriver.Client, error) {
-	if c.mongoClient != nil {
-		return c.mongoClient, nil
+func (c *Container) PostgresPool() (*pgxpool.Pool, error) {
+	if c.postgresPool != nil {
+		return c.postgresPool, nil
 	}
 
-	k, err := c.Config()
+	dsn, err := c.PostgresDSN()
 	if err != nil {
 		return nil, err
 	}
 
-	client, err := connectMongo(k.String("mongo_connection_string"))
+	pool, err := pgxpool.New(c.ctx, dsn)
 	if err != nil {
 		return nil, err
 	}
+	if err := pool.Ping(c.ctx); err != nil {
+		pool.Close()
+		return nil, err
+	}
 
-	c.mongoClient = client
-	return c.mongoClient, nil
+	c.postgresPool = pool
+	return c.postgresPool, nil
 }
 
-func (c *Container) MongoDatabase() (*mongodriver.Database, error) {
-	if c.mongoDatabase != nil {
-		return c.mongoDatabase, nil
-	}
-
+func (c *Container) PostgresDSN() (string, error) {
 	k, err := c.Config()
 	if err != nil {
-		return nil, err
-	}
-	client, err := c.MongoClient()
-	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	c.mongoDatabase = client.Database(k.String("mongo_database_name"))
-	return c.mongoDatabase, nil
+	dsn := k.String("postgres.dsn")
+	if dsn == "" {
+		dsn = k.String("postgres_dsn")
+	}
+	if dsn == "" {
+		dsn = os.Getenv("POSTGRES_DSN")
+	}
+	if dsn == "" {
+		dsn = os.Getenv("ENV_POSTGRES__DSN")
+	}
+	if dsn == "" {
+		return "", errors.New("postgres dsn is required")
+	}
+
+	return dsn, nil
 }
 
 func (c *Container) PushService() (*infra.FirebasePushNotification, error) {
@@ -230,62 +240,62 @@ func (c *Container) PushService() (*infra.FirebasePushNotification, error) {
 	return c.pushService, nil
 }
 
-func (c *Container) AccountRepository() (*mongo.MongoUserAccountRepository, error) {
+func (c *Container) AccountRepository() (*postgres.UserAccountRepository, error) {
 	if c.accountRepository != nil {
 		return c.accountRepository, nil
 	}
 
-	db, err := c.MongoDatabase()
+	db, err := c.PostgresPool()
 	if err != nil {
 		return nil, err
 	}
 
-	repo := mongo.NewMongoUserAccountRepository(db.Collection("accounts"))
+	repo := postgres.NewUserAccountRepository(db)
 	c.accountRepository = &repo
 	return c.accountRepository, nil
 }
 
-func (c *Container) MessageRepository() (*mongo.MongoMessageRepository, error) {
+func (c *Container) MessageRepository() (*postgres.MessageRepository, error) {
 	if c.messageRepository != nil {
 		return c.messageRepository, nil
 	}
 
-	db, err := c.MongoDatabase()
+	db, err := c.PostgresPool()
 	if err != nil {
 		return nil, err
 	}
 
-	repo := mongo.NewMongoMessageRepository(db.Collection("messages"))
+	repo := postgres.NewMessageRepository(db)
 	c.messageRepository = &repo
 	return c.messageRepository, nil
 }
 
-func (c *Container) PhoneRepository() (*mongo.MongoPhoneRepository, error) {
+func (c *Container) PhoneRepository() (*postgres.PhoneRepository, error) {
 	if c.phoneRepository != nil {
 		return c.phoneRepository, nil
 	}
 
-	db, err := c.MongoDatabase()
+	db, err := c.PostgresPool()
 	if err != nil {
 		return nil, err
 	}
 
-	repo := mongo.NewMongoPhoneRepository(db.Collection("phones"))
+	repo := postgres.NewPhoneRepository(db)
 	c.phoneRepository = &repo
 	return c.phoneRepository, nil
 }
 
-func (c *Container) DeliveryNotificationRepository() (*mongo.MongoDeliveryNotificationRepository, error) {
+func (c *Container) DeliveryNotificationRepository() (*postgres.DeliveryNotificationRepository, error) {
 	if c.deliveryNotificationRepository != nil {
 		return c.deliveryNotificationRepository, nil
 	}
 
-	db, err := c.MongoDatabase()
+	db, err := c.PostgresPool()
 	if err != nil {
 		return nil, err
 	}
 
-	repo := mongo.NewMongoDeliveryNotificationRepository(db.Collection("deliveryconfigs"))
+	repo := postgres.NewDeliveryNotificationRepository(db)
 	c.deliveryNotificationRepository = &repo
 	return c.deliveryNotificationRepository, nil
 }
@@ -471,9 +481,7 @@ func (c *Container) Close() {
 	if c.tracerCleanup != nil {
 		c.tracerCleanup()
 	}
-	if c.mongoClient != nil {
-		if err := c.mongoClient.Disconnect(c.ctx); err != nil {
-			c.log.Errorw("failed to disconnect mongodb", "error", err)
-		}
+	if c.postgresPool != nil {
+		c.postgresPool.Close()
 	}
 }

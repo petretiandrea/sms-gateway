@@ -1,0 +1,78 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: sms-gateway-postgres
+    environment:
+      POSTGRES_DB: sms_gateway
+      POSTGRES_USER: sms_gateway
+      POSTGRES_PASSWORD: sms_gateway
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sms_gateway -d sms_gateway"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    container_name: sms-gateway-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: sms_gateway
+      RABBITMQ_DEFAULT_PASS: sms_gateway
+      RABBITMQ_DEFAULT_VHOST: /
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  outbox:
+    image: petretiandrea/outbox-forwarder:v1.4.0
+    container_name: sms-gateway-outbox
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      POSTGRES_DSN: postgres://sms_gateway:sms_gateway@postgres:5432/sms_gateway?sslmode=disable
+      RABBITMQ_DSN: amqp://sms_gateway:sms_gateway@rabbitmq:5672/
+    configs:
+      - source: outbox-config
+        target: /etc/outbox/outbox.yaml
+
+configs:
+  outbox-config:
+    content: |
+      source:
+        type: postgres
+        data:
+          dsn: postgres://sms_gateway:sms_gateway@postgres:5432/sms_gateway?sslmode=disable
+          table_name: outbox_messages
+          batch_size: 100
+          poll_interval: 1s
+          initialize_schema: true
+
+      channels:
+        - name: sms.send.internal
+          publisher:
+            type: rabbitmq
+            data:
+              url: amqp://sms_gateway:sms_gateway@rabbitmq:5672/
+              exchange: sms
+              routing_key: sms.send.internal.requested
+              content_type: application/json
+
+volumes:
+  postgres-data:
+  rabbitmq-data:

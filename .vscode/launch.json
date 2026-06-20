@@ -1,0 +1,30 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Migrate up",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/cmd",
+      "cwd": "${workspaceFolder}",
+      "args": [
+        "migrate",
+        "--database",
+        "${input:postgresDsn}",
+        "up"
+      ],
+      "env": {
+        "POSTGRES_DSN": "${input:postgresDsn}"
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "postgresDsn",
+      "type": "promptString",
+      "description": "Postgres DSN",
+      "default": "postgres://sms_gateway:sms_gateway@localhost:5432/sms_gateway?sslmode=disable"
+    }
+  ]
+}

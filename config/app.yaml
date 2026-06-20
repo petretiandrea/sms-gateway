@@ -2,8 +2,12 @@
 app:
   name: 'sms-gateway'
 
-mongo_connection_string: 'mongodb://localhost:27017'
-mongo_database_name: "smsgateway"
+postgres:
+  dsn: 'postgres://sms_gateway:sms_gateway@localhost:5432/sms_gateway?sslmode=disable'
+
+rabbitmq:
+  dsn: 'amqp://sms_gateway:sms_gateway@localhost:5672/'
+
 dry_run: 'true'
 
 firebase:

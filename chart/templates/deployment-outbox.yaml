@@ -67,13 +67,24 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           {{- $volumeMounts := include "sms-gateway.commonVolumeMounts" . | trim }}
-          {{- if $volumeMounts }}
+          {{- if or $volumeMounts .Values.outbox.enabled }}
           volumeMounts:
+            - name: outbox-config
+              mountPath: "/etc/outbox/outbox.yaml"
+              subPath: "outbox.yaml"
+              readOnly: true
+            {{- if $volumeMounts }}
             {{- $volumeMounts | nindent 12 }}
+            {{- end }}
           {{- end }}
       {{- $volumes := include "sms-gateway.commonVolumes" . | trim }}
-      {{- if $volumes }}
+      {{- if or $volumes .Values.outbox.enabled }}
       volumes:
+        - name: outbox-config
+          configMap:
+            name: {{ include "sms-gateway.outboxConfigName" . }}
+        {{- if $volumes }}
         {{- $volumes | nindent 8 }}
+        {{- end }}
       {{- end }}
 {{- end }}
