@@ -172,7 +172,7 @@ func applyRabbitMQTopology(options rabbitMQTopologyOptions) error {
 		queue      string
 		routingKey string
 	}{
-		{queue: rabbitmqtopology.QueueSMSSendInternal, routingKey: rabbitmqtopology.RoutingKeySMSSendInternalRequested},
+		{queue: rabbitmqtopology.QueueSMSSendInternal, routingKey: rabbitmqtopology.RoutingKeyInternal},
 		{queue: rabbitmqtopology.QueueSMSSendDeadLetter, routingKey: rabbitmqtopology.RoutingKeySMSSendDeadLetter},
 		{queue: rabbitmqtopology.QueueSMSDeliveryConfirmed, routingKey: rabbitmqtopology.RoutingKeySMSDeliveryConfirmed},
 	}

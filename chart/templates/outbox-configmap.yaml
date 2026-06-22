@@ -18,12 +18,20 @@ data:
         initialize_schema: true
 
     channels:
-      - name: sms.send.internal
+      - name: internal.sms.send-requests
         publisher:
           type: rabbitmq
           data:
             url: ${RABBITMQ_DSN}
             exchange: sms
-            routing_key: sms.send.internal.requested
+            routing_key: internal.sms
+            content_type: application/json
+      - name: internal.sms.attempt-requests
+        publisher:
+          type: rabbitmq
+          data:
+            url: ${RABBITMQ_DSN}
+            exchange: sms
+            routing_key: internal.sms
             content_type: application/json
 {{- end }}

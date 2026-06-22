@@ -7,7 +7,7 @@ const (
 	QueueSMSSendDeadLetter    = "sms.send.dead-letter"
 	QueueSMSDeliveryConfirmed = "sms.delivery-confirmed"
 
-	RoutingKeySMSSendInternalRequested = "sms.send.internal.requested"
-	RoutingKeySMSSendDeadLetter        = "sms.send.dead-letter"
-	RoutingKeySMSDeliveryConfirmed     = "sms.delivery.confirmed"
+	RoutingKeyInternal             = "internal.sms"
+	RoutingKeySMSSendDeadLetter    = "sms.send.dead-letter"
+	RoutingKeySMSDeliveryConfirmed = "sms.delivery.confirmed"
 )

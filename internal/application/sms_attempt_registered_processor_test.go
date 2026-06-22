@@ -58,7 +58,10 @@ func TestSMSAttemptRegisteredProcessorNotifiesDelivery(t *testing.T) {
 	notifier := &fakeDeliveryNotifier{}
 	processor := NewSMSAttemptRegisteredProcessor(repo, notifier)
 
-	message := messages.NewSMSAttemptRegistered("evt-1", time.Now(), string(expectedSMS.Id))
+	message, err := messages.NewSMSAttemptRegistered("evt-1", time.Now(), string(expectedSMS.Id))
+	if err != nil {
+		t.Fatalf("NewSMSAttemptRegistered() error = %v", err)
+	}
 	if err := processor.Handle(context.Background(), message); err != nil {
 		t.Fatalf("processor.Handle() error = %v", err)
 	}
@@ -75,8 +78,8 @@ func TestSMSAttemptRegisteredProcessorRejectsMissingSms(t *testing.T) {
 	processor := NewSMSAttemptRegisteredProcessor(fakeSmsRepository{}, &fakeDeliveryNotifier{})
 
 	message := outbox.Message{
-		Metadata: outbox.Metadata{"type": messages.MessageTypeSMSAttemptRegistered},
-		Payload:  []byte(`{"messageId":"missing"}`),
+		Channel: messages.ChannelSMSAttemptInternal,
+		Payload: []byte(`{"messageId":"missing"}`),
 	}
 
 	err := processor.Handle(context.Background(), message)

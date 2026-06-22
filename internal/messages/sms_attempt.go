@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	MessageTypeSMSAttemptRegistered = "sms.attempt.registered"
+	ChannelSMSAttemptInternal = outbox.Channel("internal.sms.attempt-requests")
 )
 
 type SMSAttemptRegistered struct {
@@ -19,22 +19,21 @@ func NewSMSAttemptRegistered(
 	eventID string,
 	occurredAt time.Time,
 	messageID string,
-) outbox.Message {
+) (outbox.Message, error) {
 	payload, err := json.Marshal(SMSAttemptRegistered{
 		MessageID: messageID,
 	})
 	if err != nil {
-		panic(err) // TODO: avoid that
+		return outbox.Message{}, err
 	}
 
 	return outbox.Message{
 		ID:          eventID,
-		Channel:     ChannelSMSSendInternal,
+		Channel:     ChannelSMSAttemptInternal,
 		AffinityKey: outbox.AffinityKey(messageID),
 		Payload:     payload,
-		Metadata:    outbox.Metadata{"type": MessageTypeSMSAttemptRegistered},
 		OccurredAt:  occurredAt,
-	}
+	}, nil
 }
 
 func UnmarshalSMSAttemptRegistered(data []byte) (SMSAttemptRegistered, error) {

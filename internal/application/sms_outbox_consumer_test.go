@@ -38,7 +38,6 @@ func TestSMSOutboxConsumerRoutesSMSSendRequested(t *testing.T) {
 		MessageId: "evt-1",
 		Type:      string(messages.ChannelSMSSendInternal),
 		Timestamp: time.Now(),
-		Headers:   amqp.Table{"type": messages.MessageTypeSMSSendRequested},
 		Body:      []byte(`{"messageId":"sms-1"}`),
 	}
 
@@ -56,9 +55,8 @@ func TestSMSOutboxConsumerRoutesSMSAttemptRegistered(t *testing.T) {
 
 	delivery := amqp.Delivery{
 		MessageId: "evt-2",
-		Type:      string(messages.ChannelSMSSendInternal),
+		Type:      string(messages.ChannelSMSAttemptInternal),
 		Timestamp: time.Now(),
-		Headers:   amqp.Table{"type": messages.MessageTypeSMSAttemptRegistered},
 		Body:      []byte(`{"messageId":"sms-1"}`),
 	}
 
@@ -74,9 +72,8 @@ func TestSMSOutboxConsumerRejectsUnknownMessageType(t *testing.T) {
 	consumer := NewSMSOutboxConsumer(&fakeSMSSendRequestedHandler{}, &fakeSMSAttemptRegisteredHandler{})
 	delivery := amqp.Delivery{
 		MessageId: "evt-1",
-		Type:      string(messages.ChannelSMSSendInternal),
+		Type:      "unknown.channel",
 		Timestamp: time.Now(),
-		Headers:   amqp.Table{"type": "unknown.event"},
 		Body:      []byte(`{"messageId":"sms-1"}`),
 	}
 

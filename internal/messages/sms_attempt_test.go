@@ -6,10 +6,13 @@ import (
 )
 
 func TestNewSMSAttemptRegistered(t *testing.T) {
-	message := NewSMSAttemptRegistered("evt-1", time.Unix(100, 0), "sms-1")
+	message, err := NewSMSAttemptRegistered("evt-1", time.Unix(100, 0), "sms-1")
+	if err != nil {
+		t.Fatalf("NewSMSAttemptRegistered() error = %v", err)
+	}
 
-	if got := message.Metadata["type"]; got != MessageTypeSMSAttemptRegistered {
-		t.Fatalf("message.Metadata[type] = %q, want %q", got, MessageTypeSMSAttemptRegistered)
+	if got := message.Channel; got != ChannelSMSAttemptInternal {
+		t.Fatalf("message.Channel = %q, want %q", got, ChannelSMSAttemptInternal)
 	}
 
 	payload, err := UnmarshalSMSAttemptRegistered(message.Payload)

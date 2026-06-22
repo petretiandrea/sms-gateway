@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sms-gateway/internal/infra/messaging/rabbitmq"
 	"sms-gateway/internal/messages"
-	"strings"
 
 	"github.com/petretiandrea/outbox-go/pkg/outbox"
 	outboxamqp "github.com/petretiandrea/outbox-go/pkg/outbox/amqp"
@@ -37,13 +36,13 @@ func NewSMSOutboxConsumer(
 
 func (consumer *SMSOutboxConsumer) Process(ctx context.Context, delivery amqp.Delivery) error {
 	message := outboxamqp.MessageFromDelivery(delivery)
-	switch strings.TrimSpace(message.Metadata["type"]) {
-	case messages.MessageTypeSMSSendRequested:
+	switch message.Channel {
+	case messages.ChannelSMSSendInternal:
 		return consumer.smsSendProcessor.Handle(ctx, message)
-	case messages.MessageTypeSMSAttemptRegistered:
+	case messages.ChannelSMSAttemptInternal:
 		return consumer.smsAttemptRegisteredProcessor.Handle(ctx, message)
 	default:
-		return nonRetryableError{err: fmt.Errorf("unsupported outbox message type %q", message.Metadata["type"])}
+		return nonRetryableError{err: fmt.Errorf("unsupported outbox channel %q", message.Channel)}
 	}
 }
 

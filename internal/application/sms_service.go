@@ -70,11 +70,15 @@ func (service *SmsService) SendSMS(ctx context.Context, params CreateMessageComm
 			if err != nil {
 				return err
 			}
-			return service.publisher.Publish(ctx, messages.NewSMSSendRequested(
+			event, err := messages.NewSMSSendRequested(
 				uuid.NewString(),
 				time.Now(),
 				string(message.Id),
-			))
+			)
+			if err != nil {
+				return err
+			}
+			return service.publisher.Publish(ctx, event)
 		}
 	})
 	if err != nil {
@@ -114,11 +118,15 @@ func (service *SmsService) RegisterAttempt(
 		}
 
 		message = save
-		return service.publisher.Publish(ctx, messages.NewSMSAttemptRegistered(
+		event, err := messages.NewSMSAttemptRegistered(
 			uuid.NewString(),
 			time.Now(),
 			string(message.Id),
-		))
+		)
+		if err != nil {
+			return err
+		}
+		return service.publisher.Publish(ctx, event)
 	})
 	if err != nil {
 		return nil, err
