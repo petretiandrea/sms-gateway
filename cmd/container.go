@@ -6,10 +6,8 @@ import (
 	"sms-gateway/internal/api/middleware"
 	"sms-gateway/internal/application"
 	"sms-gateway/internal/config"
-	"sms-gateway/internal/events"
 	"sms-gateway/internal/health"
 	"sms-gateway/internal/infra"
-	"sms-gateway/internal/infra/changes"
 	rabbitmqmessaging "sms-gateway/internal/infra/messaging/rabbitmq"
 	"sms-gateway/internal/infra/repos/postgres"
 	"strings"
@@ -47,16 +45,15 @@ type Container struct {
 	phoneRepository                *postgres.PhoneRepository
 	deliveryNotificationRepository *postgres.DeliveryNotificationRepository
 
-	changeFeedProducer          *changes.MessageChangeFeedProducer
-	webHookNotifier             *api.HttpWebhookNotifier
-	userAccountService          *application.UserAccountService
-	phoneService                *application.PhoneService
-	smsService                  *application.SmsService
-	smsSendProcessor            *application.SMSSendProcessor
-	smsOutboxConsumer           *application.SMSOutboxConsumer
-	deliveryNotificationService *application.DeliveryNotificationService
-	deliveryConsumer            *events.MessageChangeFeedProcessor
-	smsSendConsumer             *rabbitmqmessaging.Consumer
+	webHookNotifier               *api.HttpWebhookNotifier
+	userAccountService            *application.UserAccountService
+	phoneService                  *application.PhoneService
+	smsService                    *application.SmsService
+	smsSendProcessor              *application.SMSSendProcessor
+	smsAttemptRegisteredProcessor *application.SMSAttemptRegisteredProcessor
+	smsOutboxConsumer             *application.SMSOutboxConsumer
+	deliveryNotificationService   *application.DeliveryNotificationService
+	smsSendConsumer               *rabbitmqmessaging.Consumer
 }
 
 func NewContainer(ctx context.Context, version string, log *zap.SugaredLogger) *Container {
@@ -305,13 +302,6 @@ func (c *Container) DeliveryNotificationRepository() (*postgres.DeliveryNotifica
 	return c.deliveryNotificationRepository, nil
 }
 
-func (c *Container) ChangeFeedProducer() *changes.MessageChangeFeedProducer {
-	if c.changeFeedProducer == nil {
-		c.changeFeedProducer = changes.NewMessageChangeFeedProducer()
-	}
-	return c.changeFeedProducer
-}
-
 func (c *Container) WebHookNotifier() *api.HttpWebhookNotifier {
 	if c.webHookNotifier == nil {
 		notifier := api.HttpWebhookNotifier{}
@@ -394,7 +384,7 @@ func (c *Container) SmsService() (*application.SmsService, error) {
 		return nil, err
 	}
 
-	service := application.NewSmsService(messageRepository, *phoneService, c.ChangeFeedProducer(), uow, outboxPublisher)
+	service := application.NewSmsService(messageRepository, *phoneService, uow, outboxPublisher)
 	c.smsService = &service
 	return c.smsService, nil
 }
@@ -416,21 +406,6 @@ func (c *Container) DeliveryNotificationService() (*application.DeliveryNotifica
 	service := application.NewDeliveryNotificationService(deliveryRepository, messageRepository, c.WebHookNotifier())
 	c.deliveryNotificationService = &service
 	return c.deliveryNotificationService, nil
-}
-
-func (c *Container) DeliveryConsumer() (*events.MessageChangeFeedProcessor, error) {
-	if c.deliveryConsumer != nil {
-		return c.deliveryConsumer, nil
-	}
-
-	service, err := c.DeliveryNotificationService()
-	if err != nil {
-		return nil, err
-	}
-
-	consumer := events.NewDeliveryNotificationConsumer(c.ChangeFeedProducer(), *service)
-	c.deliveryConsumer = &consumer
-	return c.deliveryConsumer, nil
 }
 
 func (c *Container) SMSSendProcessor() (*application.SMSSendProcessor, error) {
@@ -455,6 +430,24 @@ func (c *Container) SMSSendProcessor() (*application.SMSSendProcessor, error) {
 	return c.smsSendProcessor, nil
 }
 
+func (c *Container) SMSAttemptRegisteredProcessor() (*application.SMSAttemptRegisteredProcessor, error) {
+	if c.smsAttemptRegisteredProcessor != nil {
+		return c.smsAttemptRegisteredProcessor, nil
+	}
+
+	messageRepository, err := c.MessageRepository()
+	if err != nil {
+		return nil, err
+	}
+	deliveryNotificationService, err := c.DeliveryNotificationService()
+	if err != nil {
+		return nil, err
+	}
+
+	c.smsAttemptRegisteredProcessor = application.NewSMSAttemptRegisteredProcessor(messageRepository, deliveryNotificationService)
+	return c.smsAttemptRegisteredProcessor, nil
+}
+
 func (c *Container) SMSOutboxConsumer() (*application.SMSOutboxConsumer, error) {
 	if c.smsOutboxConsumer != nil {
 		return c.smsOutboxConsumer, nil
@@ -464,8 +457,12 @@ func (c *Container) SMSOutboxConsumer() (*application.SMSOutboxConsumer, error) 
 	if err != nil {
 		return nil, err
 	}
+	smsAttemptRegisteredProcessor, err := c.SMSAttemptRegisteredProcessor()
+	if err != nil {
+		return nil, err
+	}
 
-	c.smsOutboxConsumer = application.NewSMSOutboxConsumer(smsSendProcessor)
+	c.smsOutboxConsumer = application.NewSMSOutboxConsumer(smsSendProcessor, smsAttemptRegisteredProcessor)
 	return c.smsOutboxConsumer, nil
 }
 
@@ -550,12 +547,6 @@ func (c *Container) StartHTTPServer() error {
 		c.log.Error("Failed to initialize OpenTelemetry!")
 	}
 
-	deliveryConsumer, err := c.DeliveryConsumer()
-	if err != nil {
-		return err
-	}
-	go deliveryConsumer.Start()
-
 	smsSendConsumer, err := c.SMSSendConsumer()
 	if err != nil {
 		return err
@@ -571,9 +562,6 @@ func (c *Container) StartHTTPServer() error {
 }
 
 func (c *Container) Close() {
-	if c.deliveryConsumer != nil {
-		c.deliveryConsumer.Stop()
-	}
 	if c.smsSendConsumer != nil {
 		c.smsSendConsumer.Stop()
 	}

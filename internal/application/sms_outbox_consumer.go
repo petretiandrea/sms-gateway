@@ -16,13 +16,22 @@ type SMSSendRequestedHandler interface {
 	Handle(ctx context.Context, message outbox.Message) error
 }
 
-type SMSOutboxConsumer struct {
-	smsSendProcessor SMSSendRequestedHandler
+type SMSAttemptRegisteredHandler interface {
+	Handle(ctx context.Context, message outbox.Message) error
 }
 
-func NewSMSOutboxConsumer(smsSendProcessor SMSSendRequestedHandler) *SMSOutboxConsumer {
+type SMSOutboxConsumer struct {
+	smsSendProcessor              SMSSendRequestedHandler
+	smsAttemptRegisteredProcessor SMSAttemptRegisteredHandler
+}
+
+func NewSMSOutboxConsumer(
+	smsSendProcessor SMSSendRequestedHandler,
+	smsAttemptRegisteredProcessor SMSAttemptRegisteredHandler,
+) *SMSOutboxConsumer {
 	return &SMSOutboxConsumer{
-		smsSendProcessor: smsSendProcessor,
+		smsSendProcessor:              smsSendProcessor,
+		smsAttemptRegisteredProcessor: smsAttemptRegisteredProcessor,
 	}
 }
 
@@ -31,6 +40,8 @@ func (consumer *SMSOutboxConsumer) Process(ctx context.Context, delivery amqp.De
 	switch strings.TrimSpace(message.Metadata["type"]) {
 	case messages.MessageTypeSMSSendRequested:
 		return consumer.smsSendProcessor.Handle(ctx, message)
+	case messages.MessageTypeSMSAttemptRegistered:
+		return consumer.smsAttemptRegisteredProcessor.Handle(ctx, message)
 	default:
 		return nonRetryableError{err: fmt.Errorf("unsupported outbox message type %q", message.Metadata["type"])}
 	}

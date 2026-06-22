@@ -12,10 +12,9 @@ import (
 )
 
 type SmsService struct {
-	phone                 PhoneService
-	repo                  domain.Repository
-	messageFeedController domain.MessageChangeFeedController
-	uow                   domain.UnitOfWork
+	phone     PhoneService
+	repo      domain.Repository
+	uow       domain.UnitOfWork
 	publisher outbox.Publisher
 }
 
@@ -32,11 +31,10 @@ type CreateMessageCommand struct {
 func NewSmsService(
 	repo domain.Repository,
 	phoneService PhoneService,
-	messageFeedController domain.MessageChangeFeedController,
 	uow domain.UnitOfWork,
 	publisher outbox.Publisher,
 ) SmsService {
-	return SmsService{repo: repo, phone: phoneService, messageFeedController: messageFeedController, uow: uow, publisher: publisher}
+	return SmsService{repo: repo, phone: phoneService, uow: uow, publisher: publisher}
 }
 
 func (service *SmsService) SendSMS(ctx context.Context, params CreateMessageCommand) (*domain.Sms, error) {
@@ -95,24 +93,35 @@ func (service *SmsService) RegisterAttempt(
 	accountID domain.AccountID,
 	attempt domain.Attempt,
 ) (*domain.Sms, error) {
-	sms := service.repo.FindById(ctx, id)
-	if sms == nil {
-		return nil, nil
-	}
-	if sms.UserId == accountID {
-		sms.RegisterAttempt(attempt)
-		save, err := service.repo.Save(ctx, sms)
-		if err != nil {
-			return nil, err
-		} else {
-			service.messageFeedController.Add(*save)
-			return save, nil
+	var message *domain.Sms
+	err := service.uow.Tx(ctx, func(ctx context.Context) error {
+		message = service.repo.FindById(ctx, id)
+		if message == nil {
+			return nil
 		}
-	} else {
-		return nil, errors.Wrapf(
-			domain.ErrorNotMessageOwner,
-			"Not owner of sms [%s]",
-			sms.Id,
-		)
+		if message.UserId != accountID {
+			return errors.Wrapf(
+				domain.ErrorNotMessageOwner,
+				"Not owner of sms [%s]",
+				message.Id,
+			)
+		}
+
+		message.RegisterAttempt(attempt)
+		save, err := service.repo.Save(ctx, message)
+		if err != nil {
+			return err
+		}
+
+		message = save
+		return service.publisher.Publish(ctx, messages.NewSMSAttemptRegistered(
+			uuid.NewString(),
+			time.Now(),
+			string(message.Id),
+		))
+	})
+	if err != nil {
+		return nil, err
 	}
+	return message, nil
 }

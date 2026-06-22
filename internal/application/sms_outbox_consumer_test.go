@@ -21,9 +21,18 @@ func (handler *fakeSMSSendRequestedHandler) Handle(context.Context, outbox.Messa
 	return nil
 }
 
+type fakeSMSAttemptRegisteredHandler struct {
+	called bool
+}
+
+func (handler *fakeSMSAttemptRegisteredHandler) Handle(context.Context, outbox.Message) error {
+	handler.called = true
+	return nil
+}
+
 func TestSMSOutboxConsumerRoutesSMSSendRequested(t *testing.T) {
-	handler := &fakeSMSSendRequestedHandler{}
-	consumer := NewSMSOutboxConsumer(handler)
+	sendHandler := &fakeSMSSendRequestedHandler{}
+	consumer := NewSMSOutboxConsumer(sendHandler, &fakeSMSAttemptRegisteredHandler{})
 
 	delivery := amqp.Delivery{
 		MessageId: "evt-1",
@@ -36,13 +45,33 @@ func TestSMSOutboxConsumerRoutesSMSSendRequested(t *testing.T) {
 	if err := consumer.Process(context.Background(), delivery); err != nil {
 		t.Fatalf("consumer.Process() error = %v", err)
 	}
-	if !handler.called {
-		t.Fatal("expected handler to be called")
+	if !sendHandler.called {
+		t.Fatal("expected send handler to be called")
+	}
+}
+
+func TestSMSOutboxConsumerRoutesSMSAttemptRegistered(t *testing.T) {
+	attemptHandler := &fakeSMSAttemptRegisteredHandler{}
+	consumer := NewSMSOutboxConsumer(&fakeSMSSendRequestedHandler{}, attemptHandler)
+
+	delivery := amqp.Delivery{
+		MessageId: "evt-2",
+		Type:      string(messages.ChannelSMSSendInternal),
+		Timestamp: time.Now(),
+		Headers:   amqp.Table{"type": messages.MessageTypeSMSAttemptRegistered},
+		Body:      []byte(`{"messageId":"sms-1"}`),
+	}
+
+	if err := consumer.Process(context.Background(), delivery); err != nil {
+		t.Fatalf("consumer.Process() error = %v", err)
+	}
+	if !attemptHandler.called {
+		t.Fatal("expected attempt handler to be called")
 	}
 }
 
 func TestSMSOutboxConsumerRejectsUnknownMessageType(t *testing.T) {
-	consumer := NewSMSOutboxConsumer(&fakeSMSSendRequestedHandler{})
+	consumer := NewSMSOutboxConsumer(&fakeSMSSendRequestedHandler{}, &fakeSMSAttemptRegisteredHandler{})
 	delivery := amqp.Delivery{
 		MessageId: "evt-1",
 		Type:      string(messages.ChannelSMSSendInternal),
