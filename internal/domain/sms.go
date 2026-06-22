@@ -36,15 +36,21 @@ type QueryParams struct {
 }
 
 type Repository interface {
-	Save(ctx context.Context, message Sms) (*Sms, error)
+	Save(ctx context.Context, message *Sms) (*Sms, error)
 	FindById(ctx context.Context, id SmsId) *Sms
 	FindExisting(ctx context.Context, idempotencyKey string) *Sms
 	Find(ctx context.Context, params QueryParams) ([]Sms, error)
 }
 
-func CreateNewSMS(userId AccountID, from PhoneNumber, to PhoneNumber, content string, idempotencyKey string, metadata map[string]string,
-	configuration WebhookConfiguration) Sms {
-	return Sms{
+func CreateNewSMS(
+	userId AccountID,
+	from PhoneNumber,
+	to PhoneNumber,
+	content string,
+	idempotencyKey string,
+	metadata map[string]string,
+	configuration WebhookConfiguration) *Sms {
+	return &Sms{
 		Id:             SmsId(uuid.NewString()),
 		UserId:         userId,
 		From:           from,

@@ -3,16 +3,20 @@ package application
 import (
 	"context"
 	"sms-gateway/internal/domain"
-	"sms-gateway/internal/infra"
+	"sms-gateway/internal/messages"
+	"time"
 
+	"github.com/google/uuid"
+	"github.com/petretiandrea/outbox-go/pkg/outbox"
 	"github.com/pkg/errors"
 )
 
 type SmsService struct {
 	phone                 PhoneService
 	repo                  domain.Repository
-	notification          infra.FirebasePushNotification
 	messageFeedController domain.MessageChangeFeedController
+	uow                   domain.UnitOfWork
+	publisher outbox.Publisher
 }
 
 type CreateMessageCommand struct {
@@ -28,48 +32,57 @@ type CreateMessageCommand struct {
 func NewSmsService(
 	repo domain.Repository,
 	phoneService PhoneService,
-	pushService infra.FirebasePushNotification,
 	messageFeedController domain.MessageChangeFeedController,
+	uow domain.UnitOfWork,
+	publisher outbox.Publisher,
 ) SmsService {
-	return SmsService{repo: repo, phone: phoneService, notification: pushService, messageFeedController: messageFeedController}
+	return SmsService{repo: repo, phone: phoneService, messageFeedController: messageFeedController, uow: uow, publisher: publisher}
 }
 
 func (service *SmsService) SendSMS(ctx context.Context, params CreateMessageCommand) (*domain.Sms, error) {
-	if message := service.repo.FindExisting(ctx, params.IdempotencyKey); message != nil {
-		return message, nil
-	} else {
-		// retrieve phoneAccount associated
-		var metadata map[string]string
-		if params.Metadata == nil {
-			metadata = make(map[string]string)
+	var message *domain.Sms
+	err := service.uow.Tx(ctx, func(ctx context.Context) error {
+		if message = service.repo.FindExisting(ctx, params.IdempotencyKey); message != nil {
+			return nil
 		} else {
-			metadata = *params.Metadata
+			// retrieve phoneAccount associated
+			var metadata map[string]string
+			if params.Metadata == nil {
+				metadata = make(map[string]string)
+			} else {
+				metadata = *params.Metadata
+			}
+			message = domain.CreateNewSMS(
+				params.Account.Id,
+				domain.PhoneNumber{Number: params.From},
+				domain.PhoneNumber{Number: params.To},
+				params.Content,
+				params.IdempotencyKey,
+				metadata,
+				domain.WebhookConfiguration{Url: params.WebhookUrl},
+			)
+			phoneAccount, err := service.phone.GetPhoneByNumber(ctx, message.From)
+			if err != nil {
+				return err
+			}
+			if phoneAccount == nil {
+				return nil
+			}
+			_, err = service.repo.Save(ctx, message)
+			if err != nil {
+				return err
+			}
+			return service.publisher.Publish(ctx, messages.NewSMSSendRequested(
+				uuid.NewString(),
+				time.Now(),
+				string(message.Id),
+			))
 		}
-		message := domain.CreateNewSMS(
-			params.Account.Id,
-			domain.PhoneNumber{Number: params.From},
-			domain.PhoneNumber{Number: params.To},
-			params.Content,
-			params.IdempotencyKey,
-			metadata,
-			domain.WebhookConfiguration{Url: params.WebhookUrl},
-		)
-		phoneAccount, err := service.phone.GetPhoneByNumber(ctx, message.From)
-		if err != nil {
-			return nil, err
-		}
-		if phoneAccount == nil {
-			return nil, nil
-		}
-		_, err = service.repo.Save(ctx, message)
-		if err != nil {
-			return nil, err
-		}
-		if err := service.notification.Send(ctx, message, string(phoneAccount.Token)); err != nil {
-			return nil, err
-		}
-		return &message, nil
+	})
+	if err != nil {
+		return nil, err
 	}
+	return message, nil
 }
 
 func (service *SmsService) GetSMS(ctx context.Context, id domain.SmsId) *domain.Sms {
@@ -88,7 +101,7 @@ func (service *SmsService) RegisterAttempt(
 	}
 	if sms.UserId == accountID {
 		sms.RegisterAttempt(attempt)
-		save, err := service.repo.Save(ctx, *sms)
+		save, err := service.repo.Save(ctx, sms)
 		if err != nil {
 			return nil, err
 		} else {

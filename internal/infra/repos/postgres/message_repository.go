@@ -61,8 +61,8 @@ FROM sms_messages`)
 	return messages, nil
 }
 
-func (r MessageRepository) Save(ctx context.Context, message domain.Sms) (*domain.Sms, error) {
-	entity, err := messageToEntity(message)
+func (r MessageRepository) Save(ctx context.Context, message *domain.Sms) (*domain.Sms, error) {
+	entity, err := messageToEntity(*message)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ ON CONFLICT (id) DO UPDATE SET
 	}
 
 	message.LastUpdateAt = entity.updatedAt
-	return &message, nil
+	return message, nil
 }
 
 func (r MessageRepository) FindById(ctx context.Context, id domain.SmsId) *domain.Sms {

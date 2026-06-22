@@ -11,7 +11,7 @@ import (
 )
 
 type Handler interface {
-	Process(ctx context.Context, body []byte) error
+	Process(ctx context.Context, delivery amqp.Delivery) error
 }
 
 type retryableError interface {
@@ -110,7 +110,7 @@ func (consumer *Consumer) consume(ctx context.Context) error {
 
 	consumer.log.Info("rabbitmq consumer started")
 	for delivery := range deliveries {
-		if err := consumer.handler.Process(ctx, delivery.Body); err != nil {
+		if err := consumer.handler.Process(ctx, delivery); err != nil {
 			consumer.log.Error("failed to process rabbitmq message", zap.Error(err))
 			if isRetryable(err) {
 				_ = delivery.Nack(false, true)

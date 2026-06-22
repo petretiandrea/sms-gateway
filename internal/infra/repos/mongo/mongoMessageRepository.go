@@ -47,9 +47,8 @@ func (r MongoMessageRepository) Find(ctx context.Context, params domain.QueryPar
 	return domainMessages, nil
 }
 
-
-func (r MongoMessageRepository) Save(ctx context.Context, message domain.Sms) (*domain.Sms, error) {
-	entity := smsMapToEntity(message)
+func (r MongoMessageRepository) Save(ctx context.Context, message *domain.Sms) (*domain.Sms, error) {
+	entity := smsMapToEntity(*message)
 	if _, err := r.collection.UpdateByID(
 		ctx,
 		string(message.Id),
@@ -57,7 +56,7 @@ func (r MongoMessageRepository) Save(ctx context.Context, message domain.Sms) (*
 	); err != nil {
 		return nil, err
 	}
-	return &message, nil
+	return message, nil
 }
 
 func (r MongoMessageRepository) FindById(ctx context.Context, id domain.SmsId) *domain.Sms {

@@ -19,6 +19,8 @@ import (
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/petretiandrea/outbox-go/pkg/outbox"
+	outboxpostgres "github.com/petretiandrea/outbox-go/pkg/outbox/postgres"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.uber.org/zap"
 	"google.golang.org/api/option"
@@ -35,8 +37,10 @@ type Container struct {
 	server *gin.Engine
 
 	postgresPool *pgxpool.Pool
+	postgresDB   *postgres.ContextDB
 
-	pushService *infra.FirebasePushNotification
+	pushService     *infra.FirebasePushNotification
+	outboxPublisher outbox.Publisher
 
 	accountRepository              *postgres.UserAccountRepository
 	messageRepository              *postgres.MessageRepository
@@ -49,6 +53,7 @@ type Container struct {
 	phoneService                *application.PhoneService
 	smsService                  *application.SmsService
 	smsSendProcessor            *application.SMSSendProcessor
+	smsOutboxConsumer           *application.SMSOutboxConsumer
 	deliveryNotificationService *application.DeliveryNotificationService
 	deliveryConsumer            *events.MessageChangeFeedProcessor
 	smsSendConsumer             *rabbitmqmessaging.Consumer
@@ -179,6 +184,20 @@ func (c *Container) PostgresPool() (*pgxpool.Pool, error) {
 	return c.postgresPool, nil
 }
 
+func (c *Container) PostgresDB() (*postgres.ContextDB, error) {
+	if c.postgresDB != nil {
+		return c.postgresDB, nil
+	}
+
+	pool, err := c.PostgresPool()
+	if err != nil {
+		return nil, err
+	}
+
+	c.postgresDB = postgres.NewContextDB(pool)
+	return c.postgresDB, nil
+}
+
 func (c *Container) PostgresDSN() (string, error) {
 	cfg, err := c.Config()
 	if err != nil {
@@ -231,7 +250,7 @@ func (c *Container) AccountRepository() (*postgres.UserAccountRepository, error)
 		return c.accountRepository, nil
 	}
 
-	db, err := c.PostgresPool()
+	db, err := c.PostgresDB()
 	if err != nil {
 		return nil, err
 	}
@@ -246,7 +265,7 @@ func (c *Container) MessageRepository() (*postgres.MessageRepository, error) {
 		return c.messageRepository, nil
 	}
 
-	db, err := c.PostgresPool()
+	db, err := c.PostgresDB()
 	if err != nil {
 		return nil, err
 	}
@@ -261,7 +280,7 @@ func (c *Container) PhoneRepository() (*postgres.PhoneRepository, error) {
 		return c.phoneRepository, nil
 	}
 
-	db, err := c.PostgresPool()
+	db, err := c.PostgresDB()
 	if err != nil {
 		return nil, err
 	}
@@ -276,7 +295,7 @@ func (c *Container) DeliveryNotificationRepository() (*postgres.DeliveryNotifica
 		return c.deliveryNotificationRepository, nil
 	}
 
-	db, err := c.PostgresPool()
+	db, err := c.PostgresDB()
 	if err != nil {
 		return nil, err
 	}
@@ -331,9 +350,34 @@ func (c *Container) PhoneService() (*application.PhoneService, error) {
 	return c.phoneService, nil
 }
 
+func (c *Container) OutboxPublisher() (outbox.Publisher, error) {
+	if c.outboxPublisher != nil {
+		return c.outboxPublisher, nil
+	}
+
+	db, err := c.PostgresDB()
+	if err != nil {
+		return nil, err
+	}
+
+	c.outboxPublisher, err = outboxpostgres.NewPublisher(db, outboxpostgres.PublisherConfig{
+		TableName: "outbox_messages",
+	})
+	if err != nil {
+		return nil, err
+	}
+	return c.outboxPublisher, nil
+
+}
+
 func (c *Container) SmsService() (*application.SmsService, error) {
 	if c.smsService != nil {
 		return c.smsService, nil
+	}
+
+	uow, err := c.PostgresDB()
+	if err != nil {
+		return nil, err
 	}
 
 	messageRepository, err := c.MessageRepository()
@@ -344,12 +388,13 @@ func (c *Container) SmsService() (*application.SmsService, error) {
 	if err != nil {
 		return nil, err
 	}
-	pushService, err := c.PushService()
+
+	outboxPublisher, err := c.OutboxPublisher()
 	if err != nil {
 		return nil, err
 	}
 
-	service := application.NewSmsService(messageRepository, *phoneService, *pushService, c.ChangeFeedProducer())
+	service := application.NewSmsService(messageRepository, *phoneService, c.ChangeFeedProducer(), uow, outboxPublisher)
 	c.smsService = &service
 	return c.smsService, nil
 }
@@ -410,6 +455,20 @@ func (c *Container) SMSSendProcessor() (*application.SMSSendProcessor, error) {
 	return c.smsSendProcessor, nil
 }
 
+func (c *Container) SMSOutboxConsumer() (*application.SMSOutboxConsumer, error) {
+	if c.smsOutboxConsumer != nil {
+		return c.smsOutboxConsumer, nil
+	}
+
+	smsSendProcessor, err := c.SMSSendProcessor()
+	if err != nil {
+		return nil, err
+	}
+
+	c.smsOutboxConsumer = application.NewSMSOutboxConsumer(smsSendProcessor)
+	return c.smsOutboxConsumer, nil
+}
+
 func (c *Container) SMSSendConsumer() (*rabbitmqmessaging.Consumer, error) {
 	if c.smsSendConsumer != nil {
 		return c.smsSendConsumer, nil
@@ -419,7 +478,7 @@ func (c *Container) SMSSendConsumer() (*rabbitmqmessaging.Consumer, error) {
 	if err != nil {
 		return nil, err
 	}
-	processor, err := c.SMSSendProcessor()
+	consumer, err := c.SMSOutboxConsumer()
 	if err != nil {
 		return nil, err
 	}
@@ -427,7 +486,7 @@ func (c *Container) SMSSendConsumer() (*rabbitmqmessaging.Consumer, error) {
 	c.smsSendConsumer = rabbitmqmessaging.NewConsumer(
 		dsn,
 		rabbitmqmessaging.QueueSMSSendInternal,
-		processor,
+		consumer,
 		c.log.Desugar(),
 	)
 	return c.smsSendConsumer, nil
