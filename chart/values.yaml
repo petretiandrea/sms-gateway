@@ -55,7 +55,7 @@ outbox:
   replicaCount: 1
   image:
     repository: petretiandrea/outbox-forwarder
-    tag: "v1.4.0"
+    tag: "v1.6.0"
     pullPolicy: IfNotPresent
   env: {}
   secrets: {}
