@@ -44,6 +44,7 @@ type Container struct {
 	messageRepository              *postgres.MessageRepository
 	phoneRepository                *postgres.PhoneRepository
 	deliveryNotificationRepository *postgres.DeliveryNotificationRepository
+	dlqMessageRepository           *postgres.DLQMessageRepository
 
 	webHookNotifier               *api.HttpWebhookNotifier
 	userAccountService            *application.UserAccountService
@@ -52,8 +53,10 @@ type Container struct {
 	smsSendProcessor              *application.SMSSendProcessor
 	smsAttemptRegisteredProcessor *application.SMSAttemptRegisteredProcessor
 	smsOutboxConsumer             *application.SMSOutboxConsumer
+	dlqConsumer                   *application.DLQConsumer
 	deliveryNotificationService   *application.DeliveryNotificationService
 	smsSendConsumer               *rabbitmqmessaging.Consumer
+	smsDLQConsumer                *rabbitmqmessaging.Consumer
 }
 
 func NewContainer(ctx context.Context, version string, log *zap.SugaredLogger) *Container {
@@ -302,6 +305,21 @@ func (c *Container) DeliveryNotificationRepository() (*postgres.DeliveryNotifica
 	return c.deliveryNotificationRepository, nil
 }
 
+func (c *Container) DLQMessageRepository() (*postgres.DLQMessageRepository, error) {
+	if c.dlqMessageRepository != nil {
+		return c.dlqMessageRepository, nil
+	}
+
+	db, err := c.PostgresDB()
+	if err != nil {
+		return nil, err
+	}
+
+	repo := postgres.NewDLQMessageRepository(db)
+	c.dlqMessageRepository = &repo
+	return c.dlqMessageRepository, nil
+}
+
 func (c *Container) WebHookNotifier() *api.HttpWebhookNotifier {
 	if c.webHookNotifier == nil {
 		notifier := api.HttpWebhookNotifier{}
@@ -466,6 +484,20 @@ func (c *Container) SMSOutboxConsumer() (*application.SMSOutboxConsumer, error) 
 	return c.smsOutboxConsumer, nil
 }
 
+func (c *Container) DLQConsumer() (*application.DLQConsumer, error) {
+	if c.dlqConsumer != nil {
+		return c.dlqConsumer, nil
+	}
+
+	repo, err := c.DLQMessageRepository()
+	if err != nil {
+		return nil, err
+	}
+
+	c.dlqConsumer = application.NewDLQConsumer(repo)
+	return c.dlqConsumer, nil
+}
+
 func (c *Container) SMSSendConsumer() (*rabbitmqmessaging.Consumer, error) {
 	if c.smsSendConsumer != nil {
 		return c.smsSendConsumer, nil
@@ -487,6 +519,29 @@ func (c *Container) SMSSendConsumer() (*rabbitmqmessaging.Consumer, error) {
 		c.log.Desugar(),
 	)
 	return c.smsSendConsumer, nil
+}
+
+func (c *Container) SMSDLQConsumer() (*rabbitmqmessaging.Consumer, error) {
+	if c.smsDLQConsumer != nil {
+		return c.smsDLQConsumer, nil
+	}
+
+	dsn, err := c.RabbitMQDSN()
+	if err != nil {
+		return nil, err
+	}
+	consumer, err := c.DLQConsumer()
+	if err != nil {
+		return nil, err
+	}
+
+	c.smsDLQConsumer = rabbitmqmessaging.NewConsumer(
+		dsn,
+		rabbitmqmessaging.QueueSMSSendDeadLetter,
+		consumer,
+		c.log.Desugar(),
+	)
+	return c.smsDLQConsumer, nil
 }
 
 func (c *Container) APIKeyMiddleware() (api.StrictMiddlewareFunc, error) {
@@ -553,6 +608,12 @@ func (c *Container) StartHTTPServer() error {
 	}
 	go smsSendConsumer.Start(c.ctx)
 
+	smsDLQConsumer, err := c.SMSDLQConsumer()
+	if err != nil {
+		return err
+	}
+	go smsDLQConsumer.Start(c.ctx)
+
 	server, err := c.Server()
 	if err != nil {
 		return err
@@ -564,6 +625,9 @@ func (c *Container) StartHTTPServer() error {
 func (c *Container) Close() {
 	if c.smsSendConsumer != nil {
 		c.smsSendConsumer.Stop()
+	}
+	if c.smsDLQConsumer != nil {
+		c.smsDLQConsumer.Stop()
 	}
 	if c.tracerCleanup != nil {
 		c.tracerCleanup()

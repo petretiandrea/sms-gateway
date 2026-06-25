@@ -3,9 +3,9 @@ services:
     image: postgres:17-alpine
     container_name: sms-gateway-postgres
     environment:
-      POSTGRES_DB: sms_gateway
-      POSTGRES_USER: sms_gateway
-      POSTGRES_PASSWORD: sms_gateway
+      POSTGRES_DB: ${POSTGRES_DB:-sms_gateway}
+      POSTGRES_USER: ${POSTGRES_USER:-sms_gateway}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sms_gateway}
     ports:
       - "5432:5432"
     volumes:
@@ -21,9 +21,9 @@ services:
     image: rabbitmq:4-management-alpine
     container_name: sms-gateway-rabbitmq
     environment:
-      RABBITMQ_DEFAULT_USER: sms_gateway
-      RABBITMQ_DEFAULT_PASS: sms_gateway
-      RABBITMQ_DEFAULT_VHOST: /
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-sms_gateway}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-sms_gateway}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_DEFAULT_VHOST:-/}
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -45,8 +45,8 @@ services:
       rabbitmq:
         condition: service_healthy
     environment:
-      POSTGRES_DSN: postgres://sms_gateway:sms_gateway@postgres:5432/sms_gateway?sslmode=disable
-      RABBITMQ_DSN: amqp://sms_gateway:sms_gateway@rabbitmq:5672/
+      POSTGRES_DSN: ${POSTGRES_DSN:-postgres://sms_gateway:sms_gateway@postgres:5432/sms_gateway?sslmode=disable}
+      RABBITMQ_DSN: ${RABBITMQ_DSN:-amqp://sms_gateway:sms_gateway@rabbitmq:5672/}
     configs:
       - source: outbox-config
         target: /etc/outbox/outbox.yaml

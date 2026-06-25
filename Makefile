@@ -61,45 +61,9 @@ build:
 run:
 	go run ./cmd start
 
-.PHONY: postgres-up
-postgres-up:
-	docker compose up -d postgres
-
-.PHONY: postgres-down
-postgres-down:
-	docker compose down
-
-.PHONY: postgres-logs
-postgres-logs:
-	docker compose logs -f postgres
-
-.PHONY: rabbitmq-up
-rabbitmq-up:
-	docker compose up -d rabbitmq
-
-.PHONY: rabbitmq-logs
-rabbitmq-logs:
-	docker compose logs -f rabbitmq
-
 .PHONY: migrate-service
 migrate-service:
 	docker compose up migrate
-
-.PHONY: outbox-up
-outbox-up:
-	docker compose up -d outbox
-
-.PHONY: outbox-logs
-outbox-logs:
-	docker compose logs -f outbox
-
-.PHONY: infra-up
-infra-up:
-	docker compose up -d postgres rabbitmq outbox
-
-.PHONY: infra-down
-infra-down:
-	docker compose down
 
 .PHONY: migrate-up
 migrate-up:
