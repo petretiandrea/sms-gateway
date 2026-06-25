@@ -20,6 +20,7 @@ func newRootCommand(version string, log *zap.SugaredLogger) *cobra.Command {
 	root.AddCommand(newStartCommand(version, log))
 	root.AddCommand(newMigrateCommand(log))
 	root.AddCommand(newRabbitMQCommand(log))
+	root.AddCommand(newMongoDBCommand(log))
 
 	return root
 }

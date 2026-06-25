@@ -2,6 +2,8 @@ APP_NAME ?= sms-gateway
 BINARY ?= bin/$(APP_NAME)
 POSTGRES_DSN ?= postgres://sms_gateway:sms_gateway@localhost:5432/sms_gateway?sslmode=disable
 RABBITMQ_DSN ?= amqp://sms_gateway:sms_gateway@localhost:5672/
+MONGODB_URI ?= mongodb://localhost:27017/smsgateway?directConnection=true
+MONGODB_DATABASE ?= smsgateway
 CHART_DIR ?= chart
 VALUES_FILE ?=
 
@@ -29,6 +31,7 @@ help:
 	@echo "  migrate-down          Roll back all database migrations"
 	@echo "  migrate-version       Print current migration version"
 	@echo "  rabbitmq-topology     Apply RabbitMQ topology"
+	@echo "  mongodb-copy-to-postgres Copy legacy MongoDB data into Postgres"
 	@echo "  chart-template        Render the Helm chart"
 	@echo "  chart-lint            Lint the Helm chart"
 	@echo "  verify                Run fmt, tidy, tests, and chart lint"
@@ -80,6 +83,10 @@ migrate-version:
 .PHONY: rabbitmq-topology
 rabbitmq-topology:
 	go run ./cmd rabbitmq topology apply --dsn "$(RABBITMQ_DSN)"
+
+.PHONY: mongodb-copy-to-postgres
+mongodb-copy-to-postgres:
+	go run ./cmd mongodb copy-to-postgres --mongo-uri "$(MONGODB_URI)" --mongo-database "$(MONGODB_DATABASE)" --postgres-dsn "$(POSTGRES_DSN)"
 
 .PHONY: chart-template
 chart-template:
