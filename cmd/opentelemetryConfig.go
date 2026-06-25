@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
@@ -27,6 +29,9 @@ func initTracer(config OpenTelemetryConfig) (func(), error) {
 
 	// set from environment variables https://pkg.go.dev/go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc#pkg-overview
 	traceExporter, err := otlptracegrpc.New(config.ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create trace exporter %w", err)
+	}
 	bsp := sdktrace.NewBatchSpanProcessor(traceExporter)
 	traceProvider := sdktrace.NewTracerProvider(
 		sdktrace.WithSampler(sdktrace.AlwaysSample()),
@@ -37,6 +42,17 @@ func initTracer(config OpenTelemetryConfig) (func(), error) {
 
 	otel.SetTracerProvider(traceProvider)
 	otel.SetTextMapPropagator(newPropagator())
+
+	metricExporter, err := otlpmetricgrpc.New(config.ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create metric exporter %w", err)
+	}
+	metricProvider := sdkmetric.NewMeterProvider(
+		sdkmetric.WithResource(res),
+		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(metricExporter)),
+	)
+	shutdownFuncs = append(shutdownFuncs, metricProvider.Shutdown, metricExporter.Shutdown)
+	otel.SetMeterProvider(metricProvider)
 
 	return func() {
 		for i := range shutdownFuncs {

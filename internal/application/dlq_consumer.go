@@ -9,17 +9,21 @@ import (
 )
 
 type DLQConsumer struct {
-	repo domain.DLQMessageRepository
+	repo    domain.DLQMessageRepository
+	metrics DLQMetrics
 }
 
-func NewDLQConsumer(repo domain.DLQMessageRepository) *DLQConsumer {
-	return &DLQConsumer{repo: repo}
+func NewDLQConsumer(repo domain.DLQMessageRepository, metrics DLQMetrics) *DLQConsumer {
+	if metrics == nil {
+		metrics = noopDLQMetrics{}
+	}
+	return &DLQConsumer{repo: repo, metrics: metrics}
 }
 
 func (consumer *DLQConsumer) Process(ctx context.Context, delivery amqp.Delivery) error {
 	message := outboxamqp.MessageFromDelivery(delivery)
 
-	return consumer.repo.Save(ctx, domain.DLQMessage{
+	dlqMessage := domain.DLQMessage{
 		MessageID:   message.ID,
 		Channel:     string(message.Channel),
 		Exchange:    delivery.Exchange,
@@ -28,5 +32,13 @@ func (consumer *DLQConsumer) Process(ctx context.Context, delivery amqp.Delivery
 		Payload:     []byte(message.Payload),
 		Metadata:    message.Metadata,
 		OccurredAt:  message.OccurredAt,
-	})
+	}
+
+	if err := consumer.repo.Save(ctx, dlqMessage); err != nil {
+		consumer.metrics.StoreFailed(ctx, dlqMessage.Channel, dlqMessage.RoutingKey)
+		return err
+	}
+
+	consumer.metrics.MessageStored(ctx, dlqMessage.Channel, dlqMessage.RoutingKey)
+	return nil
 }

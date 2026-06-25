@@ -53,6 +53,7 @@ type Container struct {
 	smsSendProcessor              *application.SMSSendProcessor
 	smsAttemptRegisteredProcessor *application.SMSAttemptRegisteredProcessor
 	smsOutboxConsumer             *application.SMSOutboxConsumer
+	dlqMetrics                    application.DLQMetrics
 	dlqConsumer                   *application.DLQConsumer
 	deliveryNotificationService   *application.DeliveryNotificationService
 	smsSendConsumer               *rabbitmqmessaging.Consumer
@@ -484,6 +485,20 @@ func (c *Container) SMSOutboxConsumer() (*application.SMSOutboxConsumer, error) 
 	return c.smsOutboxConsumer, nil
 }
 
+func (c *Container) DLQMetrics() (application.DLQMetrics, error) {
+	if c.dlqMetrics != nil {
+		return c.dlqMetrics, nil
+	}
+
+	metrics, err := application.NewDLQMetrics()
+	if err != nil {
+		return nil, err
+	}
+
+	c.dlqMetrics = metrics
+	return c.dlqMetrics, nil
+}
+
 func (c *Container) DLQConsumer() (*application.DLQConsumer, error) {
 	if c.dlqConsumer != nil {
 		return c.dlqConsumer, nil
@@ -493,8 +508,12 @@ func (c *Container) DLQConsumer() (*application.DLQConsumer, error) {
 	if err != nil {
 		return nil, err
 	}
+	metrics, err := c.DLQMetrics()
+	if err != nil {
+		return nil, err
+	}
 
-	c.dlqConsumer = application.NewDLQConsumer(repo)
+	c.dlqConsumer = application.NewDLQConsumer(repo, metrics)
 	return c.dlqConsumer, nil
 }
 
