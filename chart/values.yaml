@@ -50,6 +50,17 @@ api:
     initialDelaySeconds: 10
     periodSeconds: 10
 
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: sms-gateway.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
 outbox:
   enabled: true
   replicaCount: 1
