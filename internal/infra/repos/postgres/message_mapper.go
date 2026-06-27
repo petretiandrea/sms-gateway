@@ -91,17 +91,21 @@ func applyAttemptToEntity(entity *messageEntity, attempt domain.Attempt) {
 	switch attempt := attempt.(type) {
 	case domain.SuccessAttempt:
 		attemptType := "success"
-		phoneID := string(attempt.PhoneId)
 		entity.lastAttemptType = &attemptType
-		entity.lastAttemptPhoneID = &phoneID
 		entity.lastAttemptCount = &attempt.AttemptCount
+		if attempt.PhoneId != "" {
+			phoneID := string(attempt.PhoneId)
+			entity.lastAttemptPhoneID = &phoneID
+		}
 	case domain.FailedAttempt:
 		attemptType := "failure"
-		phoneID := string(attempt.PhoneId)
 		entity.lastAttemptType = &attemptType
-		entity.lastAttemptPhoneID = &phoneID
 		entity.lastAttemptCount = &attempt.AttemptCount
 		entity.lastAttemptFailureReason = &attempt.Reason
+		if attempt.PhoneId != "" {
+			phoneID := string(attempt.PhoneId)
+			entity.lastAttemptPhoneID = &phoneID
+		}
 	}
 }
 

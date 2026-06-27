@@ -10,6 +10,7 @@ import (
 	"sms-gateway/internal/infra/repos/postgres"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/cobra"
 	"go.mongodb.org/mongo-driver/bson"
@@ -34,6 +35,11 @@ type mongoDeliveryNotificationConfigEntity struct {
 	WebhookURL    string `bson:"webhookURL"`
 	WebhookURLAlt string `bson:"webhookUrl"`
 	Enabled       bool   `bson:"enabled"`
+}
+
+type mongoCopyFailure struct {
+	ID  string
+	Err error
 }
 
 func newMongoDBCommand(log *zap.SugaredLogger) *cobra.Command {
@@ -157,18 +163,57 @@ func runMongoDBCopyToPostgres(ctx context.Context, options mongoCopyOptions, log
 	total += copied
 	log.Infow("mongodb delivery notification configs copied", "count", copied)
 
-	copied, err = copyMongoCollection(ctx, db.Collection(options.messagesCollection), func(entity mongorepos.MongoMessageEntity) error {
-		message := entity.ToMessage(entity.Id)
-		_, err := messageRepo.Save(ctx, message)
-		return err
-	})
+	copied, failures, err := copyMongoCollectionBestEffort(
+		ctx,
+		db.Collection(options.messagesCollection),
+		func(entity mongorepos.MongoMessageEntity) string {
+			return entity.Id
+		},
+		func(entity mongorepos.MongoMessageEntity) error {
+			if err := validateMongoMessageEntity(entity); err != nil {
+				return err
+			}
+
+			message := entity.ToMessage(entity.Id)
+			_, err := messageRepo.Save(ctx, message)
+			return err
+		},
+	)
 	if err != nil {
 		return fmt.Errorf("copy sms messages: %w", err)
 	}
 	total += copied
-	log.Infow("mongodb sms messages copied", "count", copied)
+	for _, failure := range failures {
+		log.Warnw("mongodb sms message copy failed", "id", failure.ID, "error", failure.Err)
+	}
+	log.Infow("mongodb sms messages copied", "count", copied, "failed", len(failures))
 	log.Infow("mongodb copy to postgres completed", "total", total)
 
+	return nil
+}
+
+func validateMongoMessageEntity(entity mongorepos.MongoMessageEntity) error {
+	if err := validateUUID("sms message id", entity.Id); err != nil {
+		return err
+	}
+	if err := validateUUID(fmt.Sprintf("sms message %s owner", entity.Id), entity.Owner); err != nil {
+		return err
+	}
+	if entity.LastAttempt != nil && entity.LastAttempt.PhoneId != "" {
+		if err := validateUUID(fmt.Sprintf("sms message %s last attempt phone id", entity.Id), entity.LastAttempt.PhoneId); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateUUID(field string, value string) error {
+	if value == "" {
+		return fmt.Errorf("%s is required", field)
+	}
+	if _, err := uuid.Parse(value); err != nil {
+		return fmt.Errorf("%s must be a valid uuid: %w", field, err)
+	}
 	return nil
 }
 
@@ -249,4 +294,52 @@ func copyMongoCollection[T any](
 		return copied, err
 	}
 	return copied, nil
+}
+
+func copyMongoCollectionBestEffort[T any](
+	ctx context.Context,
+	collection *mongo.Collection,
+	id func(T) string,
+	save func(T) error,
+) (int, []mongoCopyFailure, error) {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Minute)
+	defer cancel()
+
+	cursor, err := collection.Find(ctx, bson.D{})
+	if err != nil {
+		return 0, nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var copied int
+	var failures []mongoCopyFailure
+	for cursor.Next(ctx) {
+		var entity T
+		if err := cursor.Decode(&entity); err != nil {
+			failures = append(failures, mongoCopyFailure{
+				ID:  mongoFailureID(id(entity)),
+				Err: fmt.Errorf("decode mongo document: %w", err),
+			})
+			continue
+		}
+		if err := save(entity); err != nil {
+			failures = append(failures, mongoCopyFailure{
+				ID:  mongoFailureID(id(entity)),
+				Err: err,
+			})
+			continue
+		}
+		copied++
+	}
+	if err := cursor.Err(); err != nil {
+		return copied, failures, err
+	}
+	return copied, failures, nil
+}
+
+func mongoFailureID(id string) string {
+	if id == "" {
+		return "<unknown>"
+	}
+	return id
 }
