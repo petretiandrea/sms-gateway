@@ -10,21 +10,28 @@ import (
 	"github.com/petretiandrea/outbox-go/pkg/outbox"
 )
 
+type SMSAttemptRegistrar interface {
+	RegisterAttempt(ctx context.Context, id domain.SmsId, accountID domain.AccountID, attempt domain.Attempt) (*domain.Sms, error)
+}
+
 type SMSSendProcessor struct {
 	messages domain.Repository
 	phones   domain.PhoneRepository
 	push     *infra.FirebasePushNotification
+	attempts SMSAttemptRegistrar
 }
 
 func NewSMSSendProcessor(
 	messages domain.Repository,
 	phones domain.PhoneRepository,
 	push *infra.FirebasePushNotification,
+	attempts SMSAttemptRegistrar,
 ) *SMSSendProcessor {
 	return &SMSSendProcessor{
 		messages: messages,
 		phones:   phones,
 		push:     push,
+		attempts: attempts,
 	}
 }
 
@@ -48,11 +55,19 @@ func (processor *SMSSendProcessor) Handle(ctx context.Context, message outbox.Me
 		return nonRetryableError{err: fmt.Errorf("phone for sms %q not found", sms.Id)}
 	}
 
-	if phone.Token == "" {
+	if phone.Token == "" && !processor.push.IsDryRun() {
 		return nonRetryableError{err: fmt.Errorf("phone %q has no fcm token", phone.Id)}
 	}
 
 	if err := processor.push.Send(ctx, *sms, string(phone.Token)); err != nil {
+		return err
+	}
+
+	if processor.push.IsDryRun() {
+		_, err := processor.attempts.RegisterAttempt(ctx, sms.Id, sms.UserId, domain.SuccessAttempt{
+			AttemptCount: 1,
+			PhoneId:      phone.Id,
+		})
 		return err
 	}
 

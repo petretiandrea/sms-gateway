@@ -20,6 +20,10 @@ func (receiver *FirebasePushNotification) EnableDryRun() {
 	receiver.dryRun = true
 }
 
+func (receiver *FirebasePushNotification) IsDryRun() bool {
+	return receiver.dryRun
+}
+
 func (receiver *FirebasePushNotification) Send(ctx context.Context, message domain.Sms, token string) error {
 	firebaseMessage := &messaging.Message{
 		Token: token,

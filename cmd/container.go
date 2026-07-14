@@ -227,6 +227,13 @@ func (c *Container) PushService() (*infra.FirebasePushNotification, error) {
 		return nil, err
 	}
 
+	if cfg.DryRun {
+		pushService := infra.NewFirebasePushNotification(nil)
+		pushService.EnableDryRun()
+		c.pushService = &pushService
+		return c.pushService, nil
+	}
+
 	credentials := option.WithCredentialsFile(cfg.Firebase.CredentialsFile)
 	app, err := firebase.NewApp(c.ctx, nil, credentials)
 	if err != nil {
@@ -238,10 +245,6 @@ func (c *Container) PushService() (*infra.FirebasePushNotification, error) {
 	}
 
 	pushService := infra.NewFirebasePushNotification(firebaseMessaging)
-	if cfg.DryRun {
-		pushService.EnableDryRun()
-	}
-
 	c.pushService = &pushService
 	return c.pushService, nil
 }
@@ -444,8 +447,12 @@ func (c *Container) SMSSendProcessor() (*application.SMSSendProcessor, error) {
 	if err != nil {
 		return nil, err
 	}
+	smsService, err := c.SmsService()
+	if err != nil {
+		return nil, err
+	}
 
-	c.smsSendProcessor = application.NewSMSSendProcessor(messageRepository, phoneRepository, pushService)
+	c.smsSendProcessor = application.NewSMSSendProcessor(messageRepository, phoneRepository, pushService, smsService)
 	return c.smsSendProcessor, nil
 }
 
