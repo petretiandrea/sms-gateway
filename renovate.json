@@ -1,11 +1,21 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
-  "dependencyDashboard": true,
+  "dependencyDashboard": {
+    "enabled": true
+  },
+  "vulnerabilityAlerts": {
+    "enabled": true
+  },
   "timezone": "Europe/Rome",
   "schedule": ["before 6am on monday"],
   "enabledManagers": ["gomod", "github-actions", "dockerfile", "docker-compose", "helmv3", "helm-values", "kubernetes"],
   "packageRules": [
+    {
+      "matchManagers": ["gomod"],
+      "matchDepTypes": ["indirect"],
+      "enabled": false
+    },
     {"matchUpdateTypes": ["major"], "automerge": false},
     {"matchUpdateTypes": ["minor", "patch", "digest"], "automerge": false}
   ]
