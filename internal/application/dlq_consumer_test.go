@@ -106,6 +106,7 @@ func TestDLQConsumerRecordsStoreFailure(t *testing.T) {
 		MessageId:  "evt-1",
 		Type:       string(messages.ChannelSMSSendInternal),
 		RoutingKey: "sms.send.dead-letter",
+		Timestamp:  time.Now(),
 		Body:       []byte(`{"messageId":"sms-1"}`),
 	}
 

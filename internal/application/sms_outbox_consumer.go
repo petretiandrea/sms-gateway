@@ -35,7 +35,10 @@ func NewSMSOutboxConsumer(
 }
 
 func (consumer *SMSOutboxConsumer) Process(ctx context.Context, delivery amqp.Delivery) error {
-	message := outboxamqp.MessageFromDelivery(delivery)
+	message, err := outboxamqp.MessageFromDelivery(delivery)
+	if err != nil {
+		return nonRetryableError{err: fmt.Errorf("invalid outbox delivery: %w", err)}
+	}
 	switch message.Channel {
 	case messages.ChannelSMSSendInternal:
 		return consumer.smsSendProcessor.Handle(ctx, message)
