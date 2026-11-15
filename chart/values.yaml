@@ -28,7 +28,7 @@ api:
   replicaCount: 1
   image:
     repository: petretiandrea/sms-gateway-service-v2
-    tag: "3.1.0"
+    tag: "3.6.0"
     pullPolicy: IfNotPresent
   env: {}
   secrets: {}
@@ -66,7 +66,7 @@ outbox:
   replicaCount: 1
   image:
     repository: petretiandrea/outbox-forwarder
-    tag: "v1.6.0"
+    tag: "1.7.1"
     pullPolicy: IfNotPresent
   env: {}
   secrets: {}
