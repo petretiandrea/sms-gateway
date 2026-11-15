@@ -1,22 +1,119 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
-  "dependencyDashboard": {
-    "enabled": true
-  },
-  "vulnerabilityAlerts": {
-    "enabled": true
-  },
+  "extends": ["config:recommended"],
+  "dependencyDashboard": true,
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 2,
   "timezone": "Europe/Rome",
   "schedule": ["before 6am on monday"],
-  "enabledManagers": ["gomod", "github-actions", "dockerfile", "docker-compose", "helmv3", "helm-values", "kubernetes"],
+  "enabledManagers": [
+    "gomod",
+    "npm",
+    "dockerfile",
+    "docker-compose",
+    "github-actions",
+    "helmv3",
+    "helm-values"
+  ],
+  "includePaths": [
+    "go.mod",
+    "tools/go.mod",
+    "docs/package.json",
+    "docs/package-lock.json",
+    "Dockerfile",
+    "docker-compose.yaml",
+    "chart/**",
+    ".github/workflows/**"
+  ],
   "packageRules": [
     {
       "matchManagers": ["gomod"],
       "matchDepTypes": ["indirect"],
       "enabled": false
     },
-    {"matchUpdateTypes": ["major"], "automerge": false},
-    {"matchUpdateTypes": ["minor", "patch", "digest"], "automerge": false}
+    {
+      "matchManagers": ["gomod"],
+      "matchFileNames": ["go.mod"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "app Go major updates",
+      "semanticCommitType": "fix",
+      "semanticCommitScope": "app",
+      "automerge": false
+    },
+    {
+      "matchManagers": ["gomod"],
+      "matchFileNames": ["go.mod"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "app Go minor and patch updates",
+      "semanticCommitType": "fix",
+      "semanticCommitScope": "app",
+      "automerge": false
+    },
+    {
+      "matchManagers": ["gomod"],
+      "matchFileNames": ["tools/go.mod"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "tools Go major updates",
+      "semanticCommitType": "fix",
+      "semanticCommitScope": "tools",
+      "automerge": false
+    },
+    {
+      "matchManagers": ["gomod"],
+      "matchFileNames": ["tools/go.mod"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "tools Go minor and patch updates",
+      "semanticCommitType": "fix",
+      "semanticCommitScope": "tools",
+      "automerge": false
+    },
+    {
+      "matchManagers": ["dockerfile", "docker-compose", "helm-values"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "container image major updates",
+      "semanticCommitType": "fix",
+      "semanticCommitScope": "containers",
+      "automerge": false
+    },
+    {
+      "matchManagers": ["dockerfile", "docker-compose", "helm-values"],
+      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "groupName": "container image minor and patch updates",
+      "semanticCommitType": "fix",
+      "semanticCommitScope": "containers",
+      "automerge": false
+    },
+    {
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "docs major updates",
+      "semanticCommitType": "fix",
+      "semanticCommitScope": "docs",
+      "automerge": false
+    },
+    {
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "docs minor and patch updates",
+      "semanticCommitType": "fix",
+      "semanticCommitScope": "docs",
+      "automerge": false
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "CI major updates",
+      "semanticCommitType": "fix",
+      "semanticCommitScope": "ci",
+      "automerge": false
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "groupName": "CI minor and patch updates",
+      "semanticCommitType": "fix",
+      "semanticCommitScope": "ci",
+      "automerge": false
+    }
   ]
 }
