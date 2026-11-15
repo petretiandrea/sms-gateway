@@ -4,30 +4,30 @@ go 1.25.0
 
 require (
 	firebase.google.com/go v3.13.0+incompatible
-	github.com/alexliesenfeld/health v0.7.0
-	github.com/gin-contrib/zap v0.1.0
-	github.com/gin-gonic/gin v1.10.0
-	github.com/golang-migrate/migrate/v4 v4.18.3
+	github.com/alexliesenfeld/health v0.8.1
+	github.com/gin-contrib/zap v0.2.0
+	github.com/gin-gonic/gin v1.12.0
+	github.com/golang-migrate/migrate/v4 v4.20.1
 	github.com/google/uuid v1.6.0
-	github.com/jackc/pgx/v5 v5.10.0
-	github.com/knadh/koanf/v2 v2.1.2
-	github.com/oapi-codegen/runtime v1.1.1
+	github.com/jackc/pgx/v5 v5.13.0
+	github.com/knadh/koanf/v2 v2.4.1
+	github.com/oapi-codegen/runtime v1.9.0
 	github.com/pkg/errors v0.9.1
-	github.com/rabbitmq/amqp091-go v1.14.0
-	github.com/spf13/cobra v1.8.1
-	go.mongodb.org/mongo-driver v1.17.7
-	go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin v0.52.0
-	go.opentelemetry.io/otel v1.45.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.45.0
+	github.com/rabbitmq/amqp091-go v1.16.0
+	github.com/spf13/cobra v1.10.2
+	go.mongodb.org/mongo-driver v1.17.10
+	go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin v0.72.0
+	go.opentelemetry.io/otel v1.47.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.47.0
 	go.opentelemetry.io/otel/sdk v1.45.0
-	go.uber.org/zap v1.24.0
-	google.golang.org/api v0.264.0
+	go.uber.org/zap v1.28.0
+	google.golang.org/api v0.315.0
 )
 
 require (
 	github.com/petretiandrea/outbox-go/pkg/outbox v0.0.0-20260622171345-cccb1d641543
-	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.29.0
-	go.opentelemetry.io/otel/sdk/metric v1.45.0
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.47.0
+	go.opentelemetry.io/otel/sdk/metric v1.47.0
 )
 
 require (
@@ -90,7 +90,7 @@ require (
 	github.com/klauspost/compress v1.17.8 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.7 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
-	github.com/knadh/koanf/providers/env/v2 v2.0.0
+	github.com/knadh/koanf/providers/env/v2 v2.0.2
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
@@ -111,7 +111,7 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.61.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.45.0 // indirect
-	go.opentelemetry.io/otel/metric v1.45.0
+	go.opentelemetry.io/otel/metric v1.47.0
 	go.opentelemetry.io/otel/trace v1.45.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.11.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
