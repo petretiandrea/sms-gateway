@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"fmt"
 	"sms-gateway/internal/domain"
 
 	outboxamqp "github.com/petretiandrea/outbox-go/pkg/outbox/amqp"
@@ -21,7 +22,10 @@ func NewDLQConsumer(repo domain.DLQMessageRepository, metrics DLQMetrics) *DLQCo
 }
 
 func (consumer *DLQConsumer) Process(ctx context.Context, delivery amqp.Delivery) error {
-	message := outboxamqp.MessageFromDelivery(delivery)
+	message, err := outboxamqp.MessageFromDelivery(delivery)
+	if err != nil {
+		return nonRetryableError{err: fmt.Errorf("invalid outbox delivery: %w", err)}
+	}
 
 	dlqMessage := domain.DLQMessage{
 		MessageID:   message.ID,
