@@ -36,6 +36,11 @@ jobs:
           scopes: |
             ci
             core
+            deps
+            app
+            tools
+            containers
+            docs
           requireScope: true
           ignoreLabels: |
             bot
