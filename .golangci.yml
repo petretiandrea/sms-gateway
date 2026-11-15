@@ -1,28 +1,24 @@
+version: "2"
+
 run:
-  concurrency: 2
   timeout: 5m
-  go: "1.22.3"
 
 linters:
-  disable:
-    - containedctx
-    - contextcheck
-    - paralleltest
+  default: none
   enable:
-    - gofmt
     - goconst
-    - goimports
     - gosec
-    - gosimple
     - govet
     - ineffassign
     - misspell
     - nakedret
     - prealloc
     - staticcheck
-    - stylecheck
-    - typecheck
     - unconvert
     - unused
     - unparam
-    - misspell
+
+formatters:
+  enable:
+    - gofmt
+    - goimports

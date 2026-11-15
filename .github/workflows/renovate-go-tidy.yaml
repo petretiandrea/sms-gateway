@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   tidy:
-    if: github.actor == 'app/renovate' && github.event.pull_request.head.repo.full_name == github.repository
+    if: github.actor == 'renovate[bot]' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - name: Check out Renovate commit
