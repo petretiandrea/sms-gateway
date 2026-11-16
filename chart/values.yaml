@@ -28,7 +28,7 @@ api:
   replicaCount: 1
   image:
     repository: petretiandrea/sms-gateway-service-v2
-    tag: "3.6.0"
+    tag: "3.6.1"
     pullPolicy: IfNotPresent
   env: {}
   secrets: {}
