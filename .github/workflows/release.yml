@@ -6,6 +6,10 @@ on:
     branches:
       - main
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 env:
   TARGET_PLATFORMS: linux/arm64
 
