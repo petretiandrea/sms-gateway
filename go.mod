@@ -13,7 +13,7 @@ require (
 	github.com/knadh/koanf/v2 v2.4.1
 	github.com/oapi-codegen/runtime v1.8.0
 	github.com/pkg/errors v0.9.1
-	github.com/rabbitmq/amqp091-go v1.16.0
+	github.com/rabbitmq/amqp091-go v1.17.0
 	github.com/spf13/cobra v1.10.2
 	go.mongodb.org/mongo-driver/v2 v2.10.0
 	go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin v0.72.0
