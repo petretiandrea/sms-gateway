@@ -25,7 +25,7 @@ jobs:
   notify:
     needs: trivy
     if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: petretiandrea/github-actions/telegram-notify@v1
         with:
