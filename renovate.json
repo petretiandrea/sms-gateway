@@ -75,7 +75,8 @@
       "groupName": "app Go minor and patch updates",
       "semanticCommitType": "fix",
       "semanticCommitScope": "app",
-      "automerge": false
+      "automerge": true,
+      "matchCurrentVersion": "!/^0\\./"
     },
     {
       "matchManagers": [
@@ -106,7 +107,8 @@
       "groupName": "tools Go minor and patch updates",
       "semanticCommitType": "fix",
       "semanticCommitScope": "tools",
-      "automerge": false
+      "automerge": true,
+      "matchCurrentVersion": "!/^0\\./"
     },
     {
       "matchManagers": [
@@ -130,13 +132,13 @@
       ],
       "matchUpdateTypes": [
         "minor",
-        "patch",
-        "digest"
+        "patch"
       ],
       "groupName": "container image minor and patch updates",
       "semanticCommitType": "fix",
       "semanticCommitScope": "containers",
-      "automerge": false
+      "automerge": true,
+      "matchCurrentVersion": "!/^0\\./"
     },
     {
       "matchManagers": [
@@ -156,13 +158,13 @@
       ],
       "matchUpdateTypes": [
         "minor",
-        "patch",
-        "digest"
+        "patch"
       ],
       "groupName": "CI minor and patch updates",
       "semanticCommitType": "fix",
       "semanticCommitScope": "ci",
-      "automerge": false
+      "automerge": true,
+      "matchCurrentVersion": "!/^0\\./"
     }
   ]
 }
