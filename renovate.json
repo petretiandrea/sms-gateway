@@ -32,6 +32,12 @@
       "enabled": false
     },
     {
+      "description": "oapi-codegen/runtime v1.9.0+ removes strictmiddleware/gin, used by internal/api/server.go",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": ["github.com/oapi-codegen/runtime"],
+      "allowedVersions": "<1.9.0"
+    },
+    {
       "matchManagers": ["gomod"],
       "matchFileNames": ["go.mod"],
       "matchUpdateTypes": ["major"],
