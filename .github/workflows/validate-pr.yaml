@@ -40,7 +40,6 @@ jobs:
             app
             tools
             containers
-            docs
           requireScope: true
           ignoreLabels: |
             bot

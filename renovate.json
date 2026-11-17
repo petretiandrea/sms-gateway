@@ -1,14 +1,17 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
+  "extends": [
+    "config:recommended"
+  ],
   "dependencyDashboard": true,
   "prConcurrentLimit": 5,
   "prHourlyLimit": 2,
   "timezone": "Europe/Rome",
-  "schedule": ["before 6am on monday"],
+  "schedule": [
+    "before 6am on monday"
+  ],
   "enabledManagers": [
     "gomod",
-    "npm",
     "dockerfile",
     "docker-compose",
     "github-actions",
@@ -18,8 +21,6 @@
   "includePaths": [
     "go.mod",
     "tools/go.mod",
-    "docs/package.json",
-    "docs/package-lock.json",
     "Dockerfile",
     "docker-compose.yaml",
     "chart/**",
@@ -27,95 +28,137 @@
   ],
   "packageRules": [
     {
-      "matchManagers": ["gomod"],
-      "matchDepTypes": ["indirect"],
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchDepTypes": [
+        "indirect"
+      ],
       "enabled": false
     },
     {
       "description": "oapi-codegen/runtime v1.9.0+ removes strictmiddleware/gin, used by internal/api/server.go",
-      "matchManagers": ["gomod"],
-      "matchPackageNames": ["github.com/oapi-codegen/runtime"],
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchPackageNames": [
+        "github.com/oapi-codegen/runtime"
+      ],
       "allowedVersions": "<1.9.0"
     },
     {
-      "matchManagers": ["gomod"],
-      "matchFileNames": ["go.mod"],
-      "matchUpdateTypes": ["major"],
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchFileNames": [
+        "go.mod"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
       "groupName": "app Go major updates",
       "semanticCommitType": "fix",
       "semanticCommitScope": "app",
       "automerge": false
     },
     {
-      "matchManagers": ["gomod"],
-      "matchFileNames": ["go.mod"],
-      "matchUpdateTypes": ["minor", "patch"],
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchFileNames": [
+        "go.mod"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
       "groupName": "app Go minor and patch updates",
       "semanticCommitType": "fix",
       "semanticCommitScope": "app",
       "automerge": false
     },
     {
-      "matchManagers": ["gomod"],
-      "matchFileNames": ["tools/go.mod"],
-      "matchUpdateTypes": ["major"],
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchFileNames": [
+        "tools/go.mod"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
       "groupName": "tools Go major updates",
       "semanticCommitType": "fix",
       "semanticCommitScope": "tools",
       "automerge": false
     },
     {
-      "matchManagers": ["gomod"],
-      "matchFileNames": ["tools/go.mod"],
-      "matchUpdateTypes": ["minor", "patch"],
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchFileNames": [
+        "tools/go.mod"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
       "groupName": "tools Go minor and patch updates",
       "semanticCommitType": "fix",
       "semanticCommitScope": "tools",
       "automerge": false
     },
     {
-      "matchManagers": ["dockerfile", "docker-compose", "helm-values"],
-      "matchUpdateTypes": ["major"],
+      "matchManagers": [
+        "dockerfile",
+        "docker-compose",
+        "helm-values"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
       "groupName": "container image major updates",
       "semanticCommitType": "fix",
       "semanticCommitScope": "containers",
       "automerge": false
     },
     {
-      "matchManagers": ["dockerfile", "docker-compose", "helm-values"],
-      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "matchManagers": [
+        "dockerfile",
+        "docker-compose",
+        "helm-values"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "digest"
+      ],
       "groupName": "container image minor and patch updates",
       "semanticCommitType": "fix",
       "semanticCommitScope": "containers",
       "automerge": false
     },
     {
-      "matchManagers": ["npm"],
-      "matchUpdateTypes": ["major"],
-      "groupName": "docs major updates",
-      "semanticCommitType": "fix",
-      "semanticCommitScope": "docs",
-      "automerge": false
-    },
-    {
-      "matchManagers": ["npm"],
-      "matchUpdateTypes": ["minor", "patch"],
-      "groupName": "docs minor and patch updates",
-      "semanticCommitType": "fix",
-      "semanticCommitScope": "docs",
-      "automerge": false
-    },
-    {
-      "matchManagers": ["github-actions"],
-      "matchUpdateTypes": ["major"],
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
       "groupName": "CI major updates",
       "semanticCommitType": "fix",
       "semanticCommitScope": "ci",
       "automerge": false
     },
     {
-      "matchManagers": ["github-actions"],
-      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "digest"
+      ],
       "groupName": "CI minor and patch updates",
       "semanticCommitType": "fix",
       "semanticCommitScope": "ci",

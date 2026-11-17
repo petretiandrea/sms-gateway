@@ -16,6 +16,6 @@ The following diagram shows the big picture of the system. The system is compose
 - **mobile phone**: The mobile phone is responsible for receiving the push notification, sending the SMS message to the mobile phone and reporting the status of the SMS message to the service.
 - **external-system**: The external system which requests the service to send the SMS message to the mobile phone and receives updates through webhooks.
 
-![big-picture](docs/big-picture.png)
+![big-picture](assets/big-picture.png)
 
 
