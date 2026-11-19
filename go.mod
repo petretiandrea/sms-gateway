@@ -15,18 +15,18 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rabbitmq/amqp091-go v1.17.0
 	github.com/spf13/cobra v1.10.2
-	go.mongodb.org/mongo-driver/v2 v2.10.0
+	go.mongodb.org/mongo-driver/v2 v2.10.1
 	go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin v0.72.0
 	go.opentelemetry.io/otel v1.47.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.47.0
 	go.opentelemetry.io/otel/sdk v1.47.0
 	go.uber.org/zap v1.28.0
-	google.golang.org/api v0.315.0
+	google.golang.org/api v0.316.0
 )
 
 require (
-	github.com/petretiandrea/outbox-go/pkg/outbox v1.7.1
-	go.mongodb.org/mongo-driver v1.17.7
+	github.com/petretiandrea/outbox-go/pkg/outbox v1.7.2
+	go.mongodb.org/mongo-driver v1.17.10
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.47.0
 	go.opentelemetry.io/otel/sdk/metric v1.47.0
 )
