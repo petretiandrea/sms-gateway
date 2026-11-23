@@ -25,7 +25,7 @@ require (
 )
 
 require (
-	github.com/petretiandrea/outbox-go/pkg/outbox v1.7.2
+	github.com/petretiandrea/outbox-go/pkg/outbox v1.8.0
 	go.mongodb.org/mongo-driver v1.17.10
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.47.0
 	go.opentelemetry.io/otel/sdk/metric v1.47.0
