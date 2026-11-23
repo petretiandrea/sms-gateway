@@ -208,6 +208,8 @@ github.com/petretiandrea/outbox-go/pkg/outbox v1.7.1 h1:rWSsKF5TprzPn7lR1VIdMeap
 github.com/petretiandrea/outbox-go/pkg/outbox v1.7.1/go.mod h1:Oiilwz0qRj8ldnjJAH9ei5U0IwZNju1qPxtCH3i+gO4=
 github.com/petretiandrea/outbox-go/pkg/outbox v1.7.2 h1:Fa+zVq5hUN9yEdsOB8X3GA38fLqlkSI1q1qRAAcxwPw=
 github.com/petretiandrea/outbox-go/pkg/outbox v1.7.2/go.mod h1:Oiilwz0qRj8ldnjJAH9ei5U0IwZNju1qPxtCH3i+gO4=
+github.com/petretiandrea/outbox-go/pkg/outbox v1.8.0 h1:XoUraXaTOqCgkbaqNFbIU5DlUSpv0GZBFZAUQ1SPJsc=
+github.com/petretiandrea/outbox-go/pkg/outbox v1.8.0/go.mod h1:Y0I8/ZR890XXGGFGgxFwYgixHYjHI4Pz/L5nAa9uUs4=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 h1:GFCKgmp0tecUJ0sJuv4pzYCqS9+RGSn52M3FUwPs+uo=
