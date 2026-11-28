@@ -3,14 +3,12 @@
   "extends": [
     "config:recommended"
   ],
-  "dependencyDashboard": {
-    "enabled": true
-  },
-  "prConcurrentLimit": 5,
-  "prHourlyLimit": 2,
+  "dependencyDashboard": true,
+  "prConcurrentLimit": 0,
+  "prHourlyLimit": 0,
   "timezone": "Europe/Rome",
   "schedule": [
-    "before 6am on monday"
+    "before 6am"
   ],
   "enabledManagers": [
     "gomod",
